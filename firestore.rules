@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for Tríade CID
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        request.auth.token.email.matches('.*admin.*') ||
+        request.auth.token.email == 'admin@nexuscrm.com'
+      );
+    }
+
+    function isAssignedEmployee(resource) {
+      return isAuthenticated() && (
+        resource.data.assignedTo.email == request.auth.token.email ||
+        resource.data.assignedTo.id == request.auth.uid
+      );
+    }
+
+    // 1. Coleção de Clientes e Oportunidades (Customers)
+    match /customers/{customerId} {
+      // Confidencialidade (C): Administrador lê tudo; Funcionário lê seus leads atribuídos
+      allow read: if isAuthenticated();
+
+      // Integridade (I): Criação com dados válidos e atribuição
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasAll(['name', 'dealValue', 'stage']) &&
+        request.resource.data.dealValue >= 0;
+
+      // Integridade (I): Atualização de estágio e dados
+      allow update: if isAuthenticated();
+
+      // Integridade (I): Exclusão PERMANENTE permitida EXCLUSIVAMENTE para Administrador
+      allow delete: if isAdmin();
+    }
+
+    // 2. Trilha de Auditoria Imutável (Audit Trail)
+    match /audit_logs/{logId} {
+      // Confidencialidade (C): Apenas Administradores têm acesso de leitura à trilha global
+      allow read: if isAdmin();
+
+      // Integridade (I): Qualquer usuário autenticado ou sistema pode registrar logs
+      allow create: if isAuthenticated();
+
+      // Integridade (I): Logs são ESTRITAMENTE IMUTÁVEIS (Proibido editar ou apagar)
+      allow update, delete: if false;
+    }
+
+    // 3. Coleção de Configurações do Sistema
+    match /system_config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -1130,3 +1130,589 @@
   font-weight: 600;
 }
 
+/* ==========================================================================
+   Tríade CID (Confidencialidade, Integridade, Disponibilidade) & RBAC Styles
+   ========================================================================== */
+.cid-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.cid-role-badge.admin {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 1px 2px rgba(29, 78, 216, 0.08);
+}
+
+.cid-role-badge.employee {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  box-shadow: 0 1px 2px rgba(21, 128, 61, 0.08);
+}
+
+.salesperson-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: #f8fafc;
+  border: 1px solid var(--border-subtle);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.cid-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.cid-triad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.cid-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.cid-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cid-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.cid-icon-c {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.cid-icon-i {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.cid-icon-d {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.rbac-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.rbac-table th {
+  background: #f8fafc;
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.rbac-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.audit-table th {
+  background: #f8fafc;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.audit-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.audit-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.action-btn.disabled {
+  pointer-events: none;
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Comissões, Metas Comerciais & Gamificação (Vendas de Alto Impacto)
+   ========================================================================== */
+.sales-goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.goal-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-card);
+}
+
+.goal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.goal-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.goal-progress-wrap {
+  margin: 0.75rem 0;
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  border-radius: 5px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.commission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+}
+
+.commission-row:last-child {
+  border-bottom: none;
+}
+
+/* ==========================================================================
+   Gerador de Propostas Comerciais Executivas (Proposal Sheet & Print)
+   ========================================================================== */
+.proposal-sheet {
+  background: #ffffff;
+  color: #0f172a;
+  padding: 2.5rem;
+  font-family: var(--font-body);
+  line-height: 1.5;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.proposal-letterhead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #0f172a;
+  margin-bottom: 1.75rem;
+}
+
+.proposal-company-name {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.proposal-meta-box {
+  text-align: right;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.proposal-section-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #2563eb;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.proposal-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.proposal-info-block div {
+  font-size: 0.85rem;
+  color: #334155;
+  margin-bottom: 0.25rem;
+}
+
+.proposal-price-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+}
+
+.proposal-price-val {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #15803d;
+  font-family: var(--font-heading);
+}
+
+.proposal-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+}
+
+.proposal-sign-line {
+  border-top: 1px solid #94a3b8;
+  padding-top: 0.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+/* ==========================================================================
+   Estilos Especializados para Impressão e PDF (@media print)
+   ========================================================================== */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+
+  .sidebar,
+  .header,
+  .kpi-grid,
+  .pipeline-actions-bar,
+  .dialog-header button,
+  .dialog-footer,
+  .toast-container,
+  .view-section:not(#view-pipeline),
+  dialog:not(#proposal-dialog) {
+    display: none !important;
+  }
+
+  dialog#proposal-dialog {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .proposal-sheet {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .btn {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Importador de Leads (CSV & Excel)
+   ========================================================================== */
+.import-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 1.25rem;
+}
+
+.import-dropzone:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.csv-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  margin-top: 0.75rem;
+}
+
+.csv-preview-table th {
+  background: #f1f5f9;
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.csv-preview-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* ==========================================================================
+   Portal Corporativo de Autenticação & Registro (Tríade CID & RBAC)
+   ========================================================================== */
+.auth-portal-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: radial-gradient(circle at 50% 0%, #eff6ff 0%, #f8fafc 85%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.auth-portal-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 490px;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.12);
+  padding: 2.25rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.auth-portal-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.auth-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.auth-portal-title {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.25rem;
+}
+
+.auth-portal-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.auth-tabs-nav {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.auth-demo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 1.15rem 0;
+}
+
+.auth-demo-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.85rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.auth-demo-btn:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.auth-demo-btn-title {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.auth-demo-btn-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 1.25rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.auth-divider::before {
+  margin-right: 0.75em;
+}
+
+.auth-divider::after {
+  margin-left: 0.75em;
+}
+
+.auth-footer-security {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+
+
+

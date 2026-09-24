@@ -4,7 +4,7 @@
  */
 
 import { storage } from './storage-manager.js';
-import { crmStore, STAGES, PRIORITIES, LOSS_REASONS } from './crm-store.js';
+import { crmStore, STAGES, PRIORITIES, LOSS_REASONS, SALES_TEAM } from './crm-store.js';
 import { 
   renderKPIs, 
   renderKanban, 
@@ -14,18 +14,39 @@ import {
   renderLeadTimeline,
   renderConnectionStatus, 
   renderAuthBadge,
+  renderSecurityView,
   showToast,
   WA_TEMPLATES,
-  getWhatsAppLink
+  getWhatsAppLink,
+  formatBRL,
+  escapeHtml
 } from './ui-renderer.js';
 import { getSavedFirebaseConfig } from './config.js';
 import { analyzeDealWithGemini, getSavedGeminiKey, saveGeminiKey } from './gemini-service.js';
-import { initAuth, signInWithGoogle, signOutUser, onAuthChange } from './auth-service.js';
+import { 
+  initAuth, 
+  signInWithGoogle, 
+  signOutUser, 
+  onAuthChange,
+  setUserRole,
+  getCurrentRole,
+  isAdmin,
+  isEmployee,
+  USER_ROLES,
+  getCurrentUser,
+  isSessionActive,
+  setSessionActive,
+  loginAsDemoRole,
+  loginWithEmail,
+  registerUser,
+  logoutToPortal
+} from './auth-service.js';
 import { exportCustomersToCSV } from './export-service.js';
 
 let draggedCustomerId = null;
 let activeWhatsAppCustomerId = null;
 let activeLeadDetailsCustomerId = null;
+let activeProposalCustomerId = null;
 
 // ==========================================================================
 // Initialization
@@ -41,22 +62,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupWhatsAppModalEvents();
   setupLossReasonEvents();
   setupLeadDetailsEvents();
+  setupBackupEvents();
+  setupProposalModalEvents();
+  setupImportModalEvents();
+  setupAuthPortalEvents();
 
   // Setup Auth state
   onAuthChange((user) => {
     renderAuthBadge(user);
+    if (crmStore) crmStore.emitChange();
   });
   initAuth();
 
   // Subscribe state store changes to DOM rendering
   crmStore.subscribe((state) => {
-    renderKPIs(state.metrics);
-    renderKanban(state.filteredCustomers, state.metrics);
-    renderTable(state.filteredCustomers);
+    renderKPIs(state.metrics, state.permissions);
+    renderKanban(state.filteredCustomers, state.metrics, state.permissions);
+    renderTable(state.filteredCustomers, state.permissions);
     renderTasksView(state.tasks, state.taskFilter, state.allCustomers);
-    renderDetailedMetrics(state.metrics);
+    renderDetailedMetrics(state.metrics, state.allCustomers, state.permissions);
+    renderSecurityView(state);
     renderConnectionStatus(state.storageMode);
     updateNavCounters(state);
+    applyRoleUIRestrictions(state.permissions);
 
     // If lead details modal is currently open, refresh its timeline
     if (activeLeadDetailsCustomerId) {
@@ -80,6 +108,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     showToast("Nexus CRM iniciado em modo local de demonstração.", "info");
   }
 });
+
+function applyRoleUIRestrictions(permissions) {
+  const geminiBtn = document.getElementById('sidebar-gemini-btn');
+  const firebaseBtn = document.getElementById('sidebar-firebase-btn');
+  const exportBtn = document.getElementById('btn-export-csv');
+
+  if (permissions.canAccessCloudConfig) {
+    if (geminiBtn) {
+      geminiBtn.style.opacity = '1';
+      geminiBtn.title = 'Configuração da Chave Gemini AI';
+      geminiBtn.disabled = false;
+    }
+    if (firebaseBtn) {
+      firebaseBtn.style.opacity = '1';
+      firebaseBtn.title = 'Configuração do Google Cloud';
+      firebaseBtn.disabled = false;
+    }
+  } else {
+    // Restrito para Funcionários pela Confidencialidade (Tríade CID)
+    if (geminiBtn) {
+      geminiBtn.style.opacity = '0.4';
+      geminiBtn.title = '🔒 Acesso restrito ao Administrador (Confidencialidade CID)';
+    }
+    if (firebaseBtn) {
+      firebaseBtn.style.opacity = '0.4';
+      firebaseBtn.title = '🔒 Acesso restrito ao Administrador (Confidencialidade CID)';
+    }
+  }
+
+  if (exportBtn) {
+    if (permissions.canExportAll) {
+      exportBtn.title = 'Exportar base completa para CSV';
+    } else {
+      exportBtn.title = 'Exportar meus leads atribuídos para CSV (Confidencialidade)';
+    }
+  }
+}
 
 // ==========================================================================
 // Navigation & Views
@@ -476,6 +541,11 @@ function setupDialogEvents() {
       document.getElementById('input-deal-stage').value = 'lead';
       document.getElementById('input-deal-priority').value = 'medium';
       document.getElementById('input-deal-forecast').value = '';
+      const assignedSelect = document.getElementById('input-customer-assigned');
+      if (assignedSelect) {
+        const currentUser = getCurrentUser();
+        assignedSelect.value = currentUser?.email || 'lucas.vendas@nexuscrm.com';
+      }
       customerDialog.showModal();
     });
   }
@@ -501,6 +571,15 @@ function setupDialogEvents() {
       const tags = rawTags.split(',').map(t => t.trim()).filter(Boolean);
       const notes = document.getElementById('input-customer-notes').value.trim();
 
+      // Consultor atribuído (RBAC / CID)
+      const assignedSelect = document.getElementById('input-customer-assigned');
+      const assignedEmail = assignedSelect ? assignedSelect.value : 'lucas.vendas@nexuscrm.com';
+      const assignedMember = SALES_TEAM.find(m => m.email === assignedEmail) || {
+        id: 'employee-user-02',
+        name: 'Lucas Mendes (Consultor)',
+        email: assignedEmail
+      };
+
       const customerPayload = {
         name,
         company,
@@ -512,7 +591,12 @@ function setupDialogEvents() {
         priority,
         expectedCloseDate,
         tags,
-        notes
+        notes,
+        assignedTo: {
+          id: assignedMember.id,
+          name: assignedMember.name,
+          email: assignedMember.email
+        }
       };
 
       if (id) {
@@ -549,14 +633,24 @@ window.handleOpenEditCustomer = function(customerId) {
   document.getElementById('input-customer-tags').value = (customer.tags || []).join(', ');
   document.getElementById('input-customer-notes').value = customer.notes || '';
 
+  const assignedSelect = document.getElementById('input-customer-assigned');
+  if (assignedSelect) {
+    assignedSelect.value = customer.assignedTo?.email || 'lucas.vendas@nexuscrm.com';
+  }
+
   customerDialog.showModal();
 };
 
 window.handleDeleteCustomer = async function(customerId) {
-  if (!confirm("Deseja realmente excluir esta oportunidade?")) return;
+  if (!isAdmin()) {
+    showToast("🔒 Ação bloqueada pela Tríade CID: Apenas Administradores têm permissão para excluir oportunidades definitivamente.", "error");
+    return;
+  }
+
+  if (!confirm("Deseja realmente excluir esta oportunidade? Esta ação será registrada na trilha de auditoria (Integridade).")) return;
   try {
     await storage.deleteCustomer(customerId);
-    showToast("Oportunidade removida.", "info");
+    showToast("Oportunidade removida definitivamente do sistema.", "info");
   } catch (err) {
     showToast("Erro ao excluir: " + err.message, "error");
   }
@@ -774,3 +868,404 @@ function setupExportEvents() {
     });
   }
 }
+
+// ==========================================================================
+// Disaster Recovery & Backup Events (Tríade CID: Disponibilidade)
+// ==========================================================================
+function setupBackupEvents() {
+  const backupFileInput = document.getElementById('backup-file-input');
+
+  window.handleDownloadBackup = function() {
+    try {
+      const snapshot = storage.createBackupSnapshot();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot, null, 2));
+      const downloadAnchor = document.createElement('a');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `nexus_crm_backup_${timestamp}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Snapshot de contingência exportado com sucesso!", "success");
+    } catch (err) {
+      showToast("Erro ao exportar backup: " + err.message, "error");
+    }
+  };
+
+  window.handleTriggerRestoreBackup = function() {
+    if (!isAdmin()) {
+      showToast("🔒 Acesso negado: Apenas Administradores podem restaurar snapshots de backup (Tríade CID: Disponibilidade).", "error");
+      return;
+    }
+    if (backupFileInput) backupFileInput.click();
+  };
+
+  if (backupFileInput) {
+    backupFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const data = JSON.parse(event.target.result);
+          await storage.restoreBackupSnapshot(data);
+          showToast("Banco restaurado com sucesso a partir do snapshot!", "success");
+        } catch (err) {
+          showToast("Falha na restauração do backup: " + err.message, "error");
+        } finally {
+          backupFileInput.value = '';
+        }
+      };
+      reader.onerror = () => {
+        showToast("Erro ao ler o arquivo de backup.", "error");
+        backupFileInput.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
+}
+
+// ==========================================================================
+// Role Switching Handler (Tríade CID / RBAC Simulation)
+// ==========================================================================
+window.handleToggleRole = function() {
+  const current = getCurrentRole();
+  const newRole = current === USER_ROLES.ADMIN ? USER_ROLES.EMPLOYEE : USER_ROLES.ADMIN;
+  setUserRole(newRole);
+  const roleLabel = newRole === USER_ROLES.ADMIN ? 'Administrador (Acesso Total 🛡️)' : 'Funcionário / Consultor (Acesso Restrito 💼)';
+  showToast(`Perfil alternado para: ${roleLabel}`, "info");
+};
+
+// ==========================================================================
+// Proposal Modal Events (One-Click Proposal & PDF Print)
+// ==========================================================================
+function setupProposalModalEvents() {
+  const dialog = document.getElementById('proposal-dialog');
+  const btnClose = document.getElementById('btn-close-proposal-dialog');
+  const btnCloseFooter = document.getElementById('btn-close-proposal-footer');
+  const btnPrint = document.getElementById('btn-print-proposal');
+  const btnSendWA = document.getElementById('btn-send-proposal-wa');
+
+  const closeDialog = () => {
+    activeProposalCustomerId = null;
+    if (dialog) dialog.close();
+  };
+  if (btnClose) btnClose.addEventListener('click', closeDialog);
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeDialog);
+
+  window.handleOpenProposalModal = function(customerId) {
+    const customer = storage.getCustomer(customerId);
+    if (!customer) return;
+
+    activeProposalCustomerId = customerId;
+
+    const propNum = `PROP-${new Date().getFullYear()}-${customer.id.replace(/\D/g, '').slice(-4) || '1042'}`;
+    const today = new Date().toLocaleDateString('pt-BR');
+
+    document.getElementById('prop-number').textContent = propNum;
+    document.getElementById('prop-date').textContent = today;
+    document.getElementById('prop-client-name').textContent = customer.name || '-';
+    document.getElementById('prop-client-company').textContent = customer.company || 'Não informado';
+    document.getElementById('prop-client-role').textContent = customer.role || 'Responsável Comercial';
+    document.getElementById('prop-client-email').textContent = customer.email || 'Não informado';
+    document.getElementById('prop-client-phone').textContent = customer.phone || 'Não informado';
+    document.getElementById('prop-assigned-name').textContent = customer.assignedTo?.name || 'Lucas Mendes (Consultor)';
+    document.getElementById('prop-assigned-email').textContent = customer.assignedTo?.email || 'lucas.vendas@nexuscrm.com';
+    document.getElementById('prop-price-display').textContent = formatBRL(customer.dealValue);
+    document.getElementById('prop-sign-client').textContent = customer.company || customer.name || 'Cliente Contratante';
+
+    if (dialog) dialog.showModal();
+  };
+
+  if (btnPrint) {
+    btnPrint.addEventListener('click', () => {
+      window.print();
+    });
+  }
+
+  if (btnSendWA) {
+    btnSendWA.addEventListener('click', async () => {
+      if (!activeProposalCustomerId) return;
+      const customer = storage.getCustomer(activeProposalCustomerId);
+      if (!customer || !customer.phone) {
+        showToast("Este cliente não possui telefone para envio via WhatsApp.", "error");
+        return;
+      }
+
+      const msg = `Olá *${customer.name}*! Segue a Proposta Comercial formal da *Nexus CRM* para a *${customer.company || 'sua empresa'}* no valor de *${formatBRL(customer.dealValue)}*.\n\nPara validar o aceite e dar início à implantação, basta responder com seu 'De Acordo'. Estamos à sua disposição!`;
+      const link = getWhatsAppLink(customer.phone, msg);
+      if (link) {
+        await storage.addActivity(customer.id, {
+          type: 'whatsapp',
+          title: 'Proposta Comercial Enviada via WhatsApp',
+          text: `Proposta formal de ${formatBRL(customer.dealValue)} enviada para ${customer.phone}.`
+        });
+        window.open(link, '_blank');
+        showToast("Proposta enviada para o WhatsApp!", "success");
+      }
+    });
+  }
+}
+
+// ==========================================================================
+// Lead Import Modal Events (Excel / CSV / Paste)
+// ==========================================================================
+function setupImportModalEvents() {
+  const dialog = document.getElementById('import-dialog');
+  const btnOpen = document.getElementById('btn-open-import-modal');
+  const btnClose = document.getElementById('btn-close-import-dialog');
+  const btnCancel = document.getElementById('btn-cancel-import');
+  const btnConfirm = document.getElementById('btn-confirm-import');
+  const dropzone = document.getElementById('import-dropzone-area');
+  const fileInput = document.getElementById('input-csv-file');
+  const textarea = document.getElementById('textarea-import-raw');
+  const previewContainer = document.getElementById('import-preview-container');
+  const previewTbody = document.getElementById('import-preview-tbody');
+  const countLabel = document.getElementById('import-count-label');
+
+  let parsedLeads = [];
+
+  const closeDialog = () => {
+    if (dialog) dialog.close();
+    parsedLeads = [];
+  };
+
+  if (btnOpen) {
+    btnOpen.addEventListener('click', () => {
+      if (textarea) textarea.value = '';
+      if (previewContainer) previewContainer.style.display = 'none';
+      if (btnConfirm) btnConfirm.disabled = true;
+      if (dialog) dialog.showModal();
+    });
+  }
+
+  if (btnClose) btnClose.addEventListener('click', closeDialog);
+  if (btnCancel) btnCancel.addEventListener('click', closeDialog);
+
+  if (dropzone && fileInput) {
+    dropzone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (textarea) {
+          textarea.value = event.target.result;
+          parseAndRenderPreview(textarea.value);
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  if (textarea) {
+    textarea.addEventListener('input', () => {
+      parseAndRenderPreview(textarea.value);
+    });
+  }
+
+  function parseAndRenderPreview(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    parsedLeads = [];
+
+    lines.forEach(line => {
+      if (line.toLowerCase().startsWith('nome')) return; // Header skip
+      const parts = line.includes(';') ? line.split(';') : line.split(',');
+      if (parts.length >= 2) {
+        const name = parts[0]?.trim();
+        const company = parts[1]?.trim() || '';
+        const phone = parts[2]?.trim() || '';
+        const dealVal = parseFloat(parts[3]?.replace(/[^\d.]/g, '')) || 25000;
+        const email = parts[4]?.trim() || '';
+
+        if (name) {
+          parsedLeads.push({
+            name,
+            company,
+            phone,
+            dealValue: dealVal,
+            email,
+            stage: 'lead',
+            priority: 'medium',
+            tags: ['#Importado']
+          });
+        }
+      }
+    });
+
+    if (parsedLeads.length > 0) {
+      previewContainer.style.display = 'block';
+      countLabel.textContent = `${parsedLeads.length} lead(s) identificado(s) prontos para inclusão`;
+      previewTbody.innerHTML = parsedLeads.slice(0, 10).map(l => `
+        <tr>
+          <td><strong>${escapeHtml(l.name)}</strong></td>
+          <td>${escapeHtml(l.company)}</td>
+          <td>${escapeHtml(l.phone || '-')}</td>
+          <td style="color:#16a34a; font-weight:600;">${formatBRL(l.dealValue)}</td>
+        </tr>
+      `).join('') + (parsedLeads.length > 10 ? `<tr><td colspan="4" style="text-align:center; color:#64748b;">+ ${parsedLeads.length - 10} outros contatos...</td></tr>` : '');
+      btnConfirm.disabled = false;
+    } else {
+      previewContainer.style.display = 'none';
+      btnConfirm.disabled = true;
+    }
+  }
+
+  if (btnConfirm) {
+    btnConfirm.addEventListener('click', async () => {
+      if (parsedLeads.length === 0) return;
+
+      btnConfirm.disabled = true;
+      btnConfirm.textContent = 'Importando leads...';
+
+      try {
+        for (const lead of parsedLeads) {
+          await storage.saveCustomer(lead);
+        }
+        crmStore.addAuditLog('Importação em Lote de Leads', `${parsedLeads.length} novos leads importados via planilha/texto com sucesso.`);
+        closeDialog();
+        showToast(`${parsedLeads.length} oportunidades importadas com sucesso para o pipeline!`, "success");
+      } catch (err) {
+        showToast("Erro durante a importação: " + err.message, "error");
+      } finally {
+        btnConfirm.textContent = 'Confirmar e Inserir no Pipeline';
+      }
+    });
+  }
+}
+
+// ==========================================================================
+// Authentication & Registration Portal Events (Tríade CID & RBAC)
+// ==========================================================================
+function setupAuthPortalEvents() {
+  const portalScreen = document.getElementById('auth-portal-screen');
+  const appContainer = document.getElementById('app-container');
+  const tabLogin = document.getElementById('tab-auth-login');
+  const tabRegister = document.getElementById('tab-auth-register');
+  const panelLogin = document.getElementById('auth-panel-login');
+  const panelRegister = document.getElementById('auth-panel-register');
+  const btnQuickAdmin = document.getElementById('btn-quick-login-admin');
+  const btnQuickEmployee = document.getElementById('btn-quick-login-employee');
+  const formLogin = document.getElementById('form-auth-login');
+  const formRegister = document.getElementById('form-auth-register');
+  const btnGooglePortal = document.getElementById('btn-login-google-portal');
+
+  window.showAuthPortal = function() {
+    if (portalScreen) portalScreen.style.display = 'flex';
+    if (appContainer) appContainer.style.display = 'none';
+  };
+
+  window.hideAuthPortal = function() {
+    if (portalScreen) portalScreen.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'flex';
+  };
+
+  window.handleLogoutToPortal = function() {
+    logoutToPortal();
+    window.showAuthPortal();
+    showToast("Sessão finalizada com sucesso. Tela bloqueada.", "info");
+  };
+
+  // Check initial session state - default to authenticated demo if first visit, or active session
+  if (!isSessionActive()) {
+    // If not active, show the executive login portal
+    window.showAuthPortal();
+  } else {
+    window.hideAuthPortal();
+  }
+
+  // Tab switching
+  if (tabLogin && tabRegister) {
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      if (panelLogin) panelLogin.style.display = 'block';
+      if (panelRegister) panelRegister.style.display = 'none';
+    });
+
+    tabRegister.addEventListener('click', () => {
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      if (panelLogin) panelLogin.style.display = 'none';
+      if (panelRegister) panelRegister.style.display = 'block';
+    });
+  }
+
+  // Quick 1-click role logins
+  if (btnQuickAdmin) {
+    btnQuickAdmin.addEventListener('click', () => {
+      loginAsDemoRole(USER_ROLES.ADMIN);
+      window.hideAuthPortal();
+      showToast("Conectado como Administrador do Sistema 🛡️ (Acesso Total 360°)", "success");
+    });
+  }
+
+  if (btnQuickEmployee) {
+    btnQuickEmployee.addEventListener('click', () => {
+      loginAsDemoRole(USER_ROLES.EMPLOYEE);
+      window.hideAuthPortal();
+      showToast("Conectado como Lucas Mendes 💼 (Consultor Comercial)", "success");
+    });
+  }
+
+  // Form Login submit
+  if (formLogin) {
+    formLogin.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-input-email').value.trim();
+      const password = document.getElementById('login-input-password').value;
+      const role = document.getElementById('login-select-role').value;
+
+      if (!email || !password) {
+        showToast("Preencha todos os campos para entrar.", "error");
+        return;
+      }
+
+      loginWithEmail(email, password, role);
+      window.hideAuthPortal();
+      const roleLabel = role === 'admin' ? 'Administrador 🛡️' : 'Funcionário 💼';
+      showToast(`Bem-vindo(a) ao Nexus CRM! Perfil ativo: ${roleLabel}`, "success");
+    });
+  }
+
+  // Form Register submit
+  if (formRegister) {
+    formRegister.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('reg-input-name').value.trim();
+      const email = document.getElementById('reg-input-email').value.trim();
+      const company = document.getElementById('reg-input-company').value.trim();
+      const role = document.getElementById('reg-select-role').value;
+      const password = document.getElementById('reg-input-password').value;
+
+      if (!name || !email || !password) {
+        showToast("Preencha os campos obrigatórios.", "error");
+        return;
+      }
+
+      registerUser(name, email, password, role, company);
+      crmStore.addAuditLog('Novo Usuário Cadastrado', `Usuário "${name}" (${email}) registrado como ${role === 'admin' ? 'Administrador' : 'Funcionário'}.`);
+      window.hideAuthPortal();
+      showToast(`Conta criada com sucesso! Bem-vindo(a), ${name}!`, "success");
+    });
+  }
+
+  // Google sign in in portal
+  if (btnGooglePortal) {
+    btnGooglePortal.addEventListener('click', async () => {
+      try {
+        const user = await signInWithGoogle();
+        setSessionActive(true);
+        window.hideAuthPortal();
+        showToast(`Bem-vindo(a), ${user.displayName || 'Usuário Google'}!`, "success");
+      } catch (err) {
+        showToast("Erro no login Google: " + err.message, "error");
+      }
+    });
+  }
+}
+
+
+

@@ -6,6 +6,8 @@
 
 import { STORAGE_KEYS, getSavedFirebaseConfig } from './config.js';
 import * as firestoreService from './firebase-service.js';
+import { getCurrentUser, isAdmin, USER_ROLES } from './auth-service.js';
+import { crmStore } from './crm-store.js';
 
 // Realistic seed dataset with rich timeline activities, tasks and expected closing dates
 const INITIAL_DEMO_LEADS = [
@@ -21,6 +23,7 @@ const INITIAL_DEMO_LEADS = [
     priority: 'high',
     tags: ['Fintech', 'Enterprise', 'Inbound'],
     notes: 'Interesse em integração de API para pagamento em lote.',
+    assignedTo: { id: 'employee-user-02', name: 'Lucas Mendes (Consultor)', email: 'lucas.vendas@nexuscrm.com' },
     expectedCloseDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
     createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
@@ -38,7 +41,7 @@ const INITIAL_DEMO_LEADS = [
         type: 'whatsapp',
         title: 'Mensagem de Apresentação Enviada',
         text: 'Enviada apresentação institucional via WhatsApp. Aguardando retorno.',
-        author: 'Você',
+        author: 'Lucas Mendes',
         timestamp: new Date(Date.now() - 1 * 86400000).toISOString()
       }
     ],
@@ -64,6 +67,7 @@ const INITIAL_DEMO_LEADS = [
     priority: 'high',
     tags: ['Logística', 'SLA Alto'],
     notes: 'Primeira reunião agendada para alinhamento de requisitos técnicos.',
+    assignedTo: { id: 'employee-user-02', name: 'Lucas Mendes (Consultor)', email: 'lucas.vendas@nexuscrm.com' },
     expectedCloseDate: new Date(Date.now() + 20 * 86400000).toISOString().split('T')[0],
     createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
     // 4 days idle to demonstrate Deal Rotting alert
@@ -74,7 +78,7 @@ const INITIAL_DEMO_LEADS = [
         type: 'call',
         title: 'Ligação de Qualificação',
         text: 'Conversamos por 20 minutos. Rodrigo tem autonomia de compra para Q4.',
-        author: 'Você',
+        author: 'Lucas Mendes',
         timestamp: new Date(Date.now() - 4 * 86400000).toISOString()
       }
     ],
@@ -100,6 +104,7 @@ const INITIAL_DEMO_LEADS = [
     priority: 'medium',
     tags: ['Saúde', 'Segurança LGPD'],
     notes: 'Proposta comercial de 12 meses enviada. Em análise pelo comitê executivo.',
+    assignedTo: { id: 'employee-user-03', name: 'Mariana Costa (Consultora)', email: 'mariana.vendas@nexuscrm.com' },
     expectedCloseDate: new Date(Date.now() + 8 * 86400000).toISOString().split('T')[0],
     createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
@@ -109,7 +114,7 @@ const INITIAL_DEMO_LEADS = [
         type: 'meeting',
         title: 'Demonstração da Solução',
         text: 'Apresentação remota de 45 minutos. Comitê de TI participou e validou conformidade com LGPD.',
-        author: 'Você',
+        author: 'Mariana Costa',
         timestamp: new Date(Date.now() - 3 * 86400000).toISOString()
       },
       {
@@ -117,7 +122,7 @@ const INITIAL_DEMO_LEADS = [
         type: 'note',
         title: 'Proposta Enviada',
         text: 'Minuta comercial enviada com opção de pagamento semestral.',
-        author: 'Você',
+        author: 'Mariana Costa',
         timestamp: new Date(Date.now() - 1 * 86400000).toISOString()
       }
     ],
@@ -143,6 +148,7 @@ const INITIAL_DEMO_LEADS = [
     priority: 'high',
     tags: ['Agro', 'Cloud', 'Piloto'],
     notes: 'Negociando cláusulas de suporte 24/7 e SLA de 99.9%. Decisão nesta semana.',
+    assignedTo: { id: 'employee-user-02', name: 'Lucas Mendes (Consultor)', email: 'lucas.vendas@nexuscrm.com' },
     expectedCloseDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
     createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
@@ -152,7 +158,7 @@ const INITIAL_DEMO_LEADS = [
         type: 'meeting',
         title: 'Reunião de Negociação Contratual',
         text: 'Jurídico da AgroTech solicitou adequação de cláusula de rescisão sem multa em 60 dias.',
-        author: 'Você',
+        author: 'Lucas Mendes',
         timestamp: new Date(Date.now() - 1 * 86400000).toISOString()
       }
     ],
@@ -178,6 +184,7 @@ const INITIAL_DEMO_LEADS = [
     priority: 'medium',
     tags: ['Energia', 'Contrato Assinado'],
     notes: 'Contrato anual assinado! Onboarding agendado para a próxima segunda-feira.',
+    assignedTo: { id: 'employee-user-03', name: 'Mariana Costa (Consultora)', email: 'mariana.vendas@nexuscrm.com' },
     expectedCloseDate: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
     createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
@@ -187,7 +194,7 @@ const INITIAL_DEMO_LEADS = [
         type: 'stage_change',
         title: 'Contrato Fechado Ganho 🎉',
         text: 'Negócio fechado e assinado via DocuSign no valor de R$ 95.000.',
-        author: 'Você',
+        author: 'Mariana Costa',
         timestamp: new Date(Date.now() - 2 * 86400000).toISOString()
       }
     ],
@@ -208,6 +215,7 @@ const INITIAL_DEMO_LEADS = [
     lossDetails: 'Optaram por adiar o projeto para o próximo ano devido ao corte de CAPEX no varejo.',
     lostAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     notes: 'Optaram por adiar o projeto para o próximo trimestre por restrição orçamentária.',
+    assignedTo: { id: 'employee-user-02', name: 'Lucas Mendes (Consultor)', email: 'lucas.vendas@nexuscrm.com' },
     createdAt: new Date(Date.now() - 25 * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     activities: [
@@ -216,7 +224,7 @@ const INITIAL_DEMO_LEADS = [
         type: 'loss',
         title: 'Oportunidade Perdida',
         text: 'Motivo: Preço / Orçamento insuficiente. Recontatar em Janeiro.',
-        author: 'Você',
+        author: 'Lucas Mendes',
         timestamp: new Date(Date.now() - 5 * 86400000).toISOString()
       }
     ],
@@ -331,15 +339,26 @@ class StorageManager {
    * Creates or updates a customer
    */
   async saveCustomer(customerData) {
+    const user = getCurrentUser() || { name: 'Operador', email: 'user@nexuscrm.com', role: 'admin' };
+    const defaultAssignedTo = customerData.assignedTo || {
+      id: user.uid,
+      name: user.name,
+      email: user.email
+    };
+
     if (customerData.id && !customerData.id.startsWith('temp-')) {
       const existing = this.getCustomer(customerData.id);
       const merged = {
         ...existing,
         ...customerData,
+        assignedTo: customerData.assignedTo || existing?.assignedTo || defaultAssignedTo,
         activities: customerData.activities || (existing ? existing.activities : []) || [],
         tasks: customerData.tasks || (existing ? existing.tasks : []) || [],
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        updatedBy: user.name
       };
+
+      crmStore.addAuditLog('Edição de Oportunidade', `Lead "${merged.name}" (${merged.company}) atualizado por ${user.name} [${user.role}].`, merged);
 
       if (this.mode === 'firestore') {
         await firestoreService.updateFirestoreCustomer(customerData.id, merged);
@@ -355,10 +374,13 @@ class StorageManager {
       const newLead = {
         activities: [],
         tasks: [],
+        assignedTo: defaultAssignedTo,
         ...customerData,
         id: 'lead-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdBy: user.name,
+        updatedAt: new Date().toISOString(),
+        updatedBy: user.name
       };
 
       // Add creation activity
@@ -366,10 +388,12 @@ class StorageManager {
         id: 'act-' + Date.now(),
         type: 'note',
         title: 'Oportunidade Criada',
-        text: `Lead cadastrado com valor de R$ ${Number(newLead.dealValue || 0).toLocaleString('pt-BR')}.`,
-        author: 'Você',
+        text: `Lead cadastrado por ${user.name} com valor de R$ ${Number(newLead.dealValue || 0).toLocaleString('pt-BR')}.`,
+        author: user.name,
         timestamp: new Date().toISOString()
       });
+
+      crmStore.addAuditLog('Criação de Oportunidade', `Novo lead "${newLead.name}" (${newLead.company}) cadastrado por ${user.name} [${user.role}].`, newLead);
 
       if (this.mode === 'firestore') {
         await firestoreService.addFirestoreCustomer(newLead);
@@ -385,6 +409,7 @@ class StorageManager {
    * Updates only the stage of a customer
    */
   async updateStage(customerId, newStage) {
+    const user = getCurrentUser() || { name: 'Operador', role: 'admin' };
     const customer = this.getCustomer(customerId);
     const oldStage = customer ? customer.stage : 'lead';
     const updatedAt = new Date().toISOString();
@@ -393,22 +418,26 @@ class StorageManager {
       id: 'act-' + Date.now(),
       type: 'stage_change',
       title: 'Mudança de Estágio',
-      text: `Oportunidade movida de "${oldStage}" para "${newStage}".`,
-      author: 'Você',
+      text: `Oportunidade movida de "${oldStage}" para "${newStage}" por ${user.name}.`,
+      author: user.name,
       timestamp: updatedAt
     };
+
+    crmStore.addAuditLog('Avanço de Funil', `Lead "${customer?.name}" movido de "${oldStage}" para "${newStage}" por ${user.name}.`, customer);
 
     if (this.mode === 'firestore') {
       const updatedActivities = customer && customer.activities ? [...customer.activities, activity] : [activity];
       await firestoreService.updateFirestoreCustomer(customerId, { 
         stage: newStage, 
         updatedAt,
+        updatedBy: user.name,
         activities: updatedActivities 
       });
     } else {
       if (customer) {
         customer.stage = newStage;
         customer.updatedAt = updatedAt;
+        customer.updatedBy = user.name;
         if (!Array.isArray(customer.activities)) customer.activities = [];
         customer.activities.push(activity);
         this.saveLocalData();
@@ -562,8 +591,18 @@ class StorageManager {
 
   /**
    * Deletes a customer by ID
+   * ENFORCES INTEGRIDADE (I): Somente o perfil Administrador pode excluir permanentemente.
    */
   async deleteCustomer(customerId) {
+    if (!isAdmin()) {
+      crmStore.addAuditLog('Tentativa de Exclusão Negada', `Tentativa de exclusão do lead ${customerId} bloqueada pela política de Integridade (Tríade CID).`);
+      throw new Error("Operação negada pela política de Integridade (Tríade CID): Apenas o Administrador possui privilégios para excluir oportunidades do sistema.");
+    }
+
+    const customer = this.getCustomer(customerId);
+    const user = getCurrentUser() || { name: 'Administrador' };
+    crmStore.addAuditLog('Exclusão de Oportunidade', `Oportunidade "${customer?.name || customerId}" excluída definitivamente por ${user.name}.`, customer);
+
     if (this.mode === 'firestore') {
       await firestoreService.deleteFirestoreCustomer(customerId);
     } else {
@@ -571,6 +610,48 @@ class StorageManager {
       this.saveLocalData();
       this.notifyListeners();
     }
+  }
+
+  /**
+   * DISPONIBILIDADE (D): Central de Contingência & Disaster Recovery
+   * Gera snapshot JSON completo para backup de emergência
+   */
+  createBackupSnapshot() {
+    if (!isAdmin()) {
+      throw new Error("Apenas o perfil Administrador pode gerar snapshots de contingência (Disponibilidade).");
+    }
+    const user = getCurrentUser();
+    const snapshot = {
+      system: 'Nexus CRM - Suite Corporativa CID',
+      version: '2.0.0',
+      exportedAt: new Date().toISOString(),
+      exportedBy: user ? user.name : 'Administrador',
+      storageMode: this.mode,
+      totalRecords: this.currentData.length,
+      customers: this.currentData,
+      auditLogs: crmStore.getState().auditLogs
+    };
+
+    crmStore.addAuditLog('Backup Snapshot Gerado', `Snapshot de contingência com ${this.currentData.length} registros exportado com sucesso.`);
+    return snapshot;
+  }
+
+  /**
+   * DISPONIBILIDADE (D): Restauração de Snapshot de Backup
+   */
+  async restoreBackupSnapshot(snapshotData) {
+    if (!isAdmin()) {
+      throw new Error("Apenas o perfil Administrador pode restaurar backups de contingência.");
+    }
+    if (!snapshotData || !Array.isArray(snapshotData.customers)) {
+      throw new Error("Arquivo de backup inválido ou corrompido.");
+    }
+
+    this.currentData = snapshotData.customers;
+    this.saveLocalData();
+    crmStore.addAuditLog('Restauração de Banco Realizada', `Banco restaurado com sucesso a partir de snapshot (${snapshotData.customers.length} registros recuperados).`);
+    this.notifyListeners();
+    return true;
   }
 
   /**

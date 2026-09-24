@@ -58,34 +58,36 @@ export function getWhatsAppLink(phone, message) {
 /**
  * Updates Top KPI Summary Cards
  */
-export function renderKPIs(metrics) {
+export function renderKPIs(metrics, permissions = {}) {
   const container = document.getElementById('kpi-container');
   if (!container) return;
+
+  const isEmp = permissions.isEmployee;
 
   container.innerHTML = `
     <div class="kpi-card" style="--card-accent: #0f172a;">
       <div class="kpi-header">
-        <span class="kpi-title">Pipeline em Aberto</span>
+        <span class="kpi-title">${isEmp ? 'Minha Carteira (Pipeline)' : 'Pipeline Geral em Aberto'}</span>
         <div class="kpi-icon-wrap" style="color: #0f172a;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
       </div>
       <div class="kpi-value">${formatBRL(metrics.pipelineTotal)}</div>
       <div class="kpi-subtext">
-        <span class="kpi-badge positive">${metrics.activeDealsCount} oportunidades</span> ativas no funil
+        <span class="kpi-badge positive">${metrics.activeDealsCount} oportunidades</span> ${isEmp ? 'sob sua gestão' : 'ativas na empresa'}
       </div>
     </div>
 
     <div class="kpi-card" style="--card-accent: #16a34a;">
       <div class="kpi-header">
-        <span class="kpi-title">Negócios Fechados</span>
+        <span class="kpi-title">${isEmp ? 'Minhas Vendas Ganhas' : 'Negócios Fechados (Total)'}</span>
         <div class="kpi-icon-wrap" style="color: #16a34a;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         </div>
       </div>
       <div class="kpi-value" style="color: #16a34a;">${formatBRL(metrics.wonTotal)}</div>
       <div class="kpi-subtext">
-        <span class="kpi-badge positive">${metrics.wonCount} contratos</span> assinados com sucesso
+        <span class="kpi-badge positive">${metrics.wonCount} contratos</span> ${isEmp ? 'fechados por você' : 'assinados no total'}
       </div>
     </div>
 
@@ -98,7 +100,7 @@ export function renderKPIs(metrics) {
       </div>
       <div class="kpi-value">${metrics.conversionRate}%</div>
       <div class="kpi-subtext">
-        De decisões tomadas (Ganhos vs Perdidos)
+        ${isEmp ? 'Seu índice individual' : 'Média da equipe comercial'}
       </div>
     </div>
 
@@ -111,7 +113,7 @@ export function renderKPIs(metrics) {
       </div>
       <div class="kpi-value">${formatBRL(metrics.avgTicket)}</div>
       <div class="kpi-subtext">
-        Média de valor por oportunidade
+        ${isEmp ? '🔒 Confidencialidade individual' : 'Visão financeira executiva'}
       </div>
     </div>
   `;
@@ -120,7 +122,7 @@ export function renderKPIs(metrics) {
 /**
  * Renders the Kanban Board Columns and Cards with Rotting and Task Badges
  */
-export function renderKanban(customers, metrics) {
+export function renderKanban(customers, metrics, permissions = {}) {
   const container = document.getElementById('pipeline-columns');
   if (!container) return;
 
@@ -144,14 +146,14 @@ export function renderKanban(customers, metrics) {
             <div style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md); background: #ffffff;">
               Nenhum lead nesta etapa
             </div>
-          ` : stageCustomers.map(customer => renderLeadCard(customer)).join('')}
+          ` : stageCustomers.map(customer => renderLeadCard(customer, permissions)).join('')}
         </div>
       </div>
     `;
   }).join('');
 }
 
-function renderLeadCard(customer) {
+function renderLeadCard(customer, permissions = {}) {
   const priorityClass = customer.priority || 'medium';
   const priorityLabel = { high: 'Alta', medium: 'Média', low: 'Baixa' }[priorityClass] || 'Média';
   const tagsHtml = (customer.tags || []).map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('');
@@ -187,6 +189,21 @@ function renderLeadCard(customer) {
         ${customer.expectedCloseDate ? `
           <span style="font-size: 0.72rem; color: var(--text-muted); background: #f8fafc; border: 1px solid var(--border-subtle); padding: 1px 5px; border-radius: 4px;" title="Previsão de Fechamento">
             📅 ${new Date(customer.expectedCloseDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+          </span>
+        ` : ''}
+      </div>
+
+      <!-- Salesperson & CID Attribute -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.35rem;">
+        ${customer.assignedTo ? `
+          <span class="salesperson-badge" title="Responsável: ${escapeHtml(customer.assignedTo.name)}">
+            👤 ${escapeHtml(customer.assignedTo.name.split(' ')[0])}
+          </span>
+        ` : '<span class="salesperson-badge">👤 Sem atribuição</span>'}
+
+        ${customer.createdBy ? `
+          <span style="font-size: 0.68rem; color: var(--text-muted);" title="Criado por ${escapeHtml(customer.createdBy)}">
+            ✍️ ${escapeHtml(customer.createdBy.split(' ')[0])}
           </span>
         ` : ''}
       </div>
@@ -236,6 +253,9 @@ function renderLeadCard(customer) {
             </button>
           ` : ''}
 
+          <button class="action-btn" onclick="window.handleOpenProposalModal('${customer.id}')" title="Gerar Proposta Comercial Executiva (PDF / Impressão)" style="color: #0f172a;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </button>
           <button class="action-btn" onclick="window.handleOpenLeadDetails('${customer.id}')" title="Histórico e Linha do Tempo">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </button>
@@ -245,9 +265,16 @@ function renderLeadCard(customer) {
           <button class="action-btn" onclick="window.handleOpenEditCustomer('${customer.id}')" title="Editar oportunidade">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           </button>
-          <button class="action-btn" onclick="window.handleDeleteCustomer('${customer.id}')" title="Excluir" style="color: var(--color-lost);">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
+
+          ${permissions && permissions.canDelete === false ? `
+            <button class="action-btn disabled" disabled title="🔒 Exclusão restrita ao Administrador (Tríade CID: Integridade)" style="opacity: 0.35; cursor: not-allowed;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          ` : `
+            <button class="action-btn" onclick="window.handleDeleteCustomer('${customer.id}')" title="Excluir (Permissão de Administrador)" style="color: var(--color-lost);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          `}
         </div>
       </div>
     </div>
@@ -255,16 +282,16 @@ function renderLeadCard(customer) {
 }
 
 /**
- * Renders the Customer Data Table View
+ * Renders the Customer Data Table View with Salesperson attribution
  */
-export function renderTable(customers) {
+export function renderTable(customers, permissions = {}) {
   const tbody = document.getElementById('customer-table-body');
   if (!tbody) return;
 
   if (customers.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-muted); background: #ffffff;">
+        <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted); background: #ffffff;">
           Nenhum cliente ou lead encontrado com os filtros atuais.
         </td>
       </tr>
@@ -306,6 +333,13 @@ export function renderTable(customers) {
           </div>
         </td>
         <td>
+          ${customer.assignedTo ? `
+            <span class="salesperson-badge" title="${escapeHtml(customer.assignedTo.email)}">
+              👤 ${escapeHtml(customer.assignedTo.name.split(' ')[0])}
+            </span>
+          ` : '<span class="salesperson-badge">👤 Sem atribuição</span>'}
+        </td>
+        <td>
           <span style="font-weight: 700; color: var(--color-won); font-family: var(--font-heading);">
             ${formatBRL(customer.dealValue)}
           </span>
@@ -334,12 +368,21 @@ export function renderTable(customers) {
           <button class="btn btn-outline btn-sm" onclick="window.handleAnalyzeWithAI('${customer.id}')" style="margin-right: 0.35rem; color: #2563eb; border-color: #cbd5e1;" title="Análise com Gemini AI">
             ✦ IA
           </button>
+          <button class="btn btn-outline btn-sm" onclick="window.handleOpenProposalModal('${customer.id}')" style="margin-right: 0.35rem;" title="Gerar Proposta Comercial Executiva (PDF / Impressão)">
+            📄 Proposta
+          </button>
           <button class="btn btn-outline btn-sm" onclick="window.handleOpenEditCustomer('${customer.id}')" style="margin-right: 0.35rem;">
             Editar
           </button>
-          <button class="btn btn-danger-ghost btn-sm" onclick="window.handleDeleteCustomer('${customer.id}')">
-            Excluir
-          </button>
+          ${permissions && permissions.canDelete === false ? `
+            <button class="btn btn-outline btn-sm disabled" disabled title="🔒 Exclusão restrita ao Administrador (Integridade CID)" style="opacity: 0.35; cursor: not-allowed;">
+              Excluir
+            </button>
+          ` : `
+            <button class="btn btn-danger-ghost btn-sm" onclick="window.handleDeleteCustomer('${customer.id}')">
+              Excluir
+            </button>
+          `}
         </td>
       </tr>
     `;
@@ -412,13 +455,81 @@ export function renderTasksView(tasks, filter, customers) {
 /**
  * Renders Detailed Metrics (Forecast & Loss Reasons)
  */
-export function renderDetailedMetrics(metrics) {
+export function renderDetailedMetrics(metrics, allCustomers = [], permissions = {}) {
   const forecastEl = document.getElementById('metrics-forecast-value');
   const rottingEl = document.getElementById('metrics-rotting-value');
   const lossContainer = document.getElementById('metrics-loss-reasons');
 
   if (forecastEl) forecastEl.textContent = formatBRL(metrics.currentMonthForecast);
   if (rottingEl) rottingEl.textContent = `${metrics.rottingCount} oportunidade(s)`;
+
+  // Commercial Target (Meta Q4)
+  const targetGoal = 250000;
+  const wonVal = metrics.wonTotal || 0;
+  const targetPct = Math.min(100, Math.round((wonVal / targetGoal) * 100));
+  const remaining = Math.max(0, targetGoal - wonVal);
+
+  const targetBadge = document.getElementById('target-percentage-badge');
+  const targetRealized = document.getElementById('target-realized-value');
+  const targetFill = document.getElementById('target-progress-fill');
+  const targetRem = document.getElementById('target-remaining-label');
+
+  if (targetBadge) {
+    targetBadge.textContent = `${targetPct}% Atingido`;
+    targetBadge.style.background = targetPct >= 70 ? '#f0fdf4' : '#fffbeb';
+    targetBadge.style.color = targetPct >= 70 ? '#15803d' : '#b45309';
+  }
+  if (targetRealized) targetRealized.textContent = formatBRL(wonVal);
+  if (targetFill) targetFill.style.width = `${targetPct}%`;
+  if (targetRem) {
+    targetRem.textContent = remaining > 0 
+      ? `Faltam ${formatBRL(remaining)} para a meta máxima`
+      : `🎉 Parabéns! Meta comercial batida com sucesso!`;
+  }
+
+  // Gamification & Commissions (5% rate)
+  const leaderboardEl = document.getElementById('commissions-leaderboard');
+  if (leaderboardEl) {
+    const wonCustomers = (allCustomers || []).filter(c => c.stage === 'won');
+    const lucasWon = wonCustomers.filter(c => c.assignedTo?.email?.includes('lucas') || c.assignedTo?.name?.includes('Lucas'))
+      .reduce((acc, c) => acc + (Number(c.dealValue) || 0), 0);
+    const marianaWon = wonCustomers.filter(c => c.assignedTo?.email?.includes('mariana') || c.assignedTo?.name?.includes('Mariana'))
+      .reduce((acc, c) => acc + (Number(c.dealValue) || 0), 0);
+
+    const commissionRate = 0.05; // 5%
+    const lucasComm = lucasWon * commissionRate;
+    const marianaComm = marianaWon * commissionRate;
+
+    leaderboardEl.innerHTML = `
+      <div class="commission-row">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.1rem;">🥇</span>
+          <div>
+            <div style="font-weight: 600; font-size: 0.82rem;">Mariana Costa (Consultora)</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">${formatBRL(marianaWon)} faturados</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-weight: 700; color: #16a34a; font-size: 0.88rem;">${formatBRL(marianaComm)}</span>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">Comissão (5%)</div>
+        </div>
+      </div>
+
+      <div class="commission-row">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.1rem;">🥈</span>
+          <div>
+            <div style="font-weight: 600; font-size: 0.82rem;">Lucas Mendes (Consultor)</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">${formatBRL(lucasWon)} faturados</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-weight: 700; color: #16a34a; font-size: 0.88rem;">${formatBRL(lucasComm)}</span>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">Comissão (5%)</div>
+        </div>
+      </div>
+    `;
+  }
 
   if (lossContainer && metrics.lossReasonCounts) {
     const reasons = Object.entries(metrics.lossReasonCounts)
@@ -502,33 +613,49 @@ export function renderLeadTimeline(customer) {
 /**
  * Updates User Authentication Status Badge
  */
+/**
+ * Updates User Authentication Status Badge with Role (Admin vs Employee)
+ */
 export function renderAuthBadge(user) {
   const container = document.getElementById('auth-status-container');
   if (!container) return;
 
+  const role = user?.role || 'admin';
+  const roleLabel = role === 'admin' ? '🛡️ Admin' : '💼 Funcionário';
+  const roleClass = role === 'admin' ? 'admin' : 'employee';
+
   if (user) {
     container.innerHTML = `
-      <div class="user-profile-badge">
+      <div class="user-profile-badge" style="gap: 0.5rem;">
         ${user.photoURL ? `<img src="${user.photoURL}" class="user-avatar-img" alt="${escapeHtml(user.name)}">` : `
-          <div style="width: 22px; height: 22px; border-radius: 50%; background: #0f172a; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; font-weight:700;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: #0f172a; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:700;">
             ${(user.name || 'U')[0].toUpperCase()}
           </div>
         `}
-        <span style="font-weight: 600;">${escapeHtml(user.name.split(' ')[0])}</span>
-        <button type="button" class="btn btn-outline btn-sm" id="btn-auth-logout" style="padding: 2px 7px; font-size: 0.75rem;" title="Sair da conta">Sair</button>
+        <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1;">
+          <span style="font-weight: 600; font-size: 0.8rem;">${escapeHtml(user.name.split(' ')[0])}</span>
+          <span class="cid-role-badge ${roleClass}" style="padding: 1px 6px; font-size: 0.65rem; margin-top: 1px;">
+            ${roleLabel}
+          </span>
+        </div>
+        
+        <!-- Quick Switch Button for CIA Triad simulation -->
+        <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-role" style="padding: 3px 7px; font-size: 0.72rem;" title="Alternar entre Administrador e Funcionário para testar a Tríade CID">
+          Alternar Perfil
+        </button>
+
+        <!-- Return to Auth & Registration Portal -->
+        <button type="button" class="btn btn-outline btn-sm" id="btn-portal-logout" style="padding: 3px 7px; font-size: 0.72rem; color: #dc2626; border-color: #fecaca;" title="Encerrar sessão e retornar ao Portal de Acesso e Registro">
+          🚪 Sair
+        </button>
       </div>
     `;
-    const btnLogout = document.getElementById('btn-auth-logout');
-    if (btnLogout) btnLogout.addEventListener('click', window.handleSignOut);
-  } else {
-    container.innerHTML = `
-      <button type="button" class="btn btn-outline btn-sm" id="btn-auth-login" style="font-size: 0.8rem; gap: 0.4rem;">
-        <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15.2c0 2.8.7 5.5 1.9 7.8l3.7-2.9z"/><path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16.5C3.7 20.2 7.5 23.5 12 23.5z"/></svg>
-        <span>Entrar com Google</span>
-      </button>
-    `;
-    const btnLogin = document.getElementById('btn-auth-login');
-    if (btnLogin) btnLogin.addEventListener('click', window.handleSignInWithGoogle);
+
+    const btnToggle = document.getElementById('btn-toggle-role');
+    if (btnToggle) btnToggle.addEventListener('click', window.handleToggleRole);
+
+    const btnPortalLogout = document.getElementById('btn-portal-logout');
+    if (btnPortalLogout) btnPortalLogout.addEventListener('click', window.handleLogoutToPortal);
   }
 }
 
@@ -554,6 +681,208 @@ export function renderConnectionStatus(mode) {
     `;
     pill.title = 'Clique para conectar suas credenciais do Firebase';
   }
+}
+
+/**
+ * Renders the Dedicated Tríade CID & Governança View
+ */
+export function renderSecurityView(state) {
+  const container = document.getElementById('security-content-container');
+  if (!container) return;
+
+  const isAdm = state.currentRole === 'admin';
+
+  container.innerHTML = `
+    <div class="cid-status-bar">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+          <span style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary);">Tríade CID &amp; Governança Corporativa</span>
+          <span class="cid-role-badge ${state.currentRole}">
+            ${isAdm ? '🛡️ Perfil: Administrador' : '💼 Perfil: Funcionário / Consultor'}
+          </span>
+        </div>
+        <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
+          Aplicação dos pilares de <strong>Confidencialidade, Integridade e Disponibilidade</strong> com controle de acesso baseado em papéis (RBAC).
+        </p>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" onclick="window.handleToggleRole()">
+        ${isAdm ? 'Simular Visão do Funcionário 💼' : 'Alternar para Administrador 🛡️'}
+      </button>
+    </div>
+
+    <div class="cid-triad-grid">
+      <!-- C: Confidencialidade -->
+      <div class="cid-card">
+        <div class="cid-card-header">
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div class="cid-icon-wrapper cid-icon-c">🔒</div>
+            <div>
+              <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">1. Confidencialidade (C)</h3>
+              <span style="font-size: 0.72rem; color: var(--text-secondary);">Isolamento e Menor Privilégio</span>
+            </div>
+          </div>
+          <span style="font-size: 0.7rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 7px; border-radius: 4px;">
+            ${isAdm ? 'Acesso Global' : 'Acesso Restrito'}
+          </span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.5rem;">
+          ${isAdm 
+            ? 'Como <strong>Administrador</strong>, você tem visão de 360° com faturamento global consolidado e acesso a todas as configurações e chaves de API.'
+            : 'Como <strong>Funcionário</strong>, você acessa <strong>apenas seus próprios leads</strong>. Faturamento global da empresa e configurações de chaves de API ficam ocultos.'
+          }
+        </p>
+        <table class="rbac-table">
+          <thead>
+            <tr>
+              <th>Recurso / Operação</th>
+              <th>Admin</th>
+              <th>Funcionário</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Visualizar Oportunidades</td>
+              <td><span style="color:#16a34a; font-weight:600;">✅ Todos (${state.allCustomers.length})</span></td>
+              <td><span style="color:#2563eb; font-weight:600;">🔒 Seus Leads (${state.visibleCustomers.length})</span></td>
+            </tr>
+            <tr>
+              <td>Métricas de Faturamento Geral</td>
+              <td><span style="color:#16a34a; font-weight:600;">✅ Total</span></td>
+              <td><span style="color:#dc2626; font-weight:600;">🔒 Oculto</span></td>
+            </tr>
+            <tr>
+              <td>Configurações Cloud / IA</td>
+              <td><span style="color:#16a34a; font-weight:600;">✅ Liberado</span></td>
+              <td><span style="color:#dc2626; font-weight:600;">🔒 Bloqueado</span></td>
+            </tr>
+            <tr>
+              <td>Exportação Geral de Dados</td>
+              <td><span style="color:#16a34a; font-weight:600;">✅ Total</span></td>
+              <td><span style="color:#d97706; font-weight:600;">🔒 Restrito</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- I: Integridade -->
+      <div class="cid-card">
+        <div class="cid-card-header">
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div class="cid-icon-wrapper cid-icon-i">🛡️</div>
+            <div>
+              <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">2. Integridade (I)</h3>
+              <span style="font-size: 0.72rem; color: var(--text-secondary);">Trilha de Auditoria &amp; Imutabilidade</span>
+            </div>
+          </div>
+          <span style="font-size: 0.7rem; font-weight: 700; color: #dc2626; background: #fef2f2; padding: 2px 7px; border-radius: 4px;">
+            Auditado
+          </span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.5rem;">
+          Garante que os dados do CRM sejam exatos, consistentes e protegidos contra mutações ou exclusões indevidas:
+        </p>
+        <ul style="font-size: 0.8rem; color: var(--text-primary); padding-left: 1.1rem; line-height: 1.6; margin: 0.5rem 0;">
+          <li><strong>Bloqueio de Exclusão:</strong> Funcionários não podem apagar leads do banco de dados (privilégio exclusivo de Administrador).</li>
+          <li><strong>Rastreabilidade Total:</strong> Todas as alterações (avanço de fase, edição, nova tarefa) são assinadas com o nome do operador.</li>
+          <li><strong>Motivos de Perda:</strong> Cancelamentos exigem preenchimento formal de motivo estratégico.</li>
+        </ul>
+      </div>
+
+      <!-- D: Disponibilidade -->
+      <div class="cid-card">
+        <div class="cid-card-header">
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div class="cid-icon-wrapper cid-icon-d">⚡</div>
+            <div>
+              <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">3. Disponibilidade (D)</h3>
+              <span style="font-size: 0.72rem; color: var(--text-secondary);">Resiliência &amp; Disaster Recovery</span>
+            </div>
+          </div>
+          <span style="font-size: 0.7rem; font-weight: 700; color: #16a34a; background: #f0fdf4; padding: 2px 7px; border-radius: 4px;">
+            ${state.availability.isOnline ? 'Online' : 'Resiliente'}
+          </span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.5rem;">
+          Garante que os consultores e administradores continuem operando mesmo com oscilações de conexão de rede:
+        </p>
+        <div style="margin: 0.6rem 0; padding: 0.75rem; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 0.8rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Status da Rede:</span>
+            <strong>${state.availability.isOnline ? '🟢 Conectado à Internet' : '🟡 Modo Resiliente Offline'}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Banco de Dados:</span>
+            <strong>${state.storageMode === 'firestore' ? 'Google Cloud Firestore' : 'Cache Local / Híbrido'}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Persistência Resiliente:</span>
+            <span style="color: #16a34a; font-weight: 600;">✓ Ativa (Zero Perda)</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: auto;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.handleDownloadBackup()" style="flex: 1;" ${isAdm ? '' : 'disabled title="🔒 Apenas Administrador pode exportar backups"'}>
+            💾 Exportar Backup
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.handleTriggerRestoreBackup()" style="flex: 1;" ${isAdm ? '' : 'disabled title="🔒 Apenas Administrador pode restaurar backups"'}>
+            🔄 Restaurar Banco
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Log Live Feed -->
+    <div class="table-container" style="padding: 1.25rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+        <div>
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Trilha de Auditoria em Tempo Real (Audit Log)</h3>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Registro cronológico imutável de todas as transações e acessos realizados no sistema.</p>
+        </div>
+        <span class="audit-tag" style="background: #eff6ff; color: #1e40af; border-color: #bfdbfe;">
+          ${state.auditLogs.length} eventos registrados
+        </span>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th style="width: 130px;">Horário</th>
+              <th style="width: 170px;">Ação</th>
+              <th style="width: 180px;">Usuário / Papel</th>
+              <th>Detalhes da Operação</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.auditLogs.length === 0 ? `
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  Nenhum evento registrado nesta sessão. As ações de criação, edição, alteração de estágio e segurança aparecerão aqui em tempo real.
+                </td>
+              </tr>
+            ` : state.auditLogs.map(log => `
+              <tr>
+                <td style="color: var(--text-secondary); font-size: 0.75rem; white-space: nowrap;">
+                  ${new Date(log.timestamp).toLocaleTimeString('pt-BR')} • ${new Date(log.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                </td>
+                <td>
+                  <span class="audit-tag">${escapeHtml(log.action)}</span>
+                </td>
+                <td>
+                  <div style="font-weight: 600; font-size: 0.8rem;">${escapeHtml(log.userName)}</div>
+                  <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">
+                    ${log.userRole === 'admin' ? '🛡️ Admin' : '💼 Funcionário'}
+                  </div>
+                </td>
+                <td style="color: var(--text-secondary); font-size: 0.8rem;">
+                  ${escapeHtml(log.details)}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
 }
 
 /**

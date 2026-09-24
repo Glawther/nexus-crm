@@ -35,15 +35,60 @@ export const TASK_TYPES = [
   { id: 'followup', label: 'Follow-up', icon: '📝' }
 ];
 
+import { getCurrentRole, getCurrentUser, USER_ROLES } from './auth-service.js';
+
+export const SALES_TEAM = [
+  { id: 'employee-user-02', name: 'Lucas Mendes (Consultor)', email: 'lucas.vendas@nexuscrm.com', role: 'employee' },
+  { id: 'employee-user-03', name: 'Mariana Costa (Consultora)', email: 'mariana.vendas@nexuscrm.com', role: 'employee' },
+  { id: 'admin-user-01', name: 'Administrador do Sistema', email: 'admin@nexuscrm.com', role: 'admin' }
+];
+
 class CRMStore {
   constructor() {
     this.customers = [];
     this.storageMode = 'local';
     this.searchQuery = '';
     this.selectedPriority = 'all';
-    this.activeView = 'pipeline'; // 'pipeline' | 'customers' | 'tasks' | 'metrics'
+    this.selectedSalesperson = 'all'; // Admin filter: 'all' | employee email
+    this.activeView = 'pipeline'; // 'pipeline' | 'customers' | 'tasks' | 'metrics' | 'security'
     this.taskFilter = 'pending'; // 'pending' | 'today' | 'all' | 'completed'
+    this.auditLogs = [];
+    this.availability = {
+      isOnline: navigator.onLine,
+      mode: 'online',
+      latency: 42,
+      lastBackupTime: null
+    };
     this.subscribers = [];
+    
+    // Listen to network status for Availability (Disponibilidade)
+    window.addEventListener('online', () => this.updateNetworkStatus(true));
+    window.addEventListener('offline', () => this.updateNetworkStatus(false));
+  }
+
+  updateNetworkStatus(isOnline) {
+    this.availability.isOnline = isOnline;
+    this.availability.mode = isOnline ? 'online' : 'offline_cache';
+    this.emitChange();
+  }
+
+  addAuditLog(action, details, targetLead = null) {
+    const user = getCurrentUser() || { name: 'Sistema', role: 'admin', email: 'system@local' };
+    const logEntry = {
+      id: 'audit-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      action,
+      details,
+      targetLead: targetLead ? { id: targetLead.id, name: targetLead.name, company: targetLead.company } : null,
+      userName: user.name,
+      userEmail: user.email,
+      userRole: user.role || getCurrentRole(),
+      timestamp: new Date().toISOString()
+    };
+
+    this.auditLogs.unshift(logEntry);
+    if (this.auditLogs.length > 50) this.auditLogs.pop(); // Keep 50 recent logs
+    this.emitChange();
+    return logEntry;
   }
 
   setCustomers(customers, mode = 'local') {
@@ -59,6 +104,11 @@ class CRMStore {
 
   setPriorityFilter(priority) {
     this.selectedPriority = priority;
+    this.emitChange();
+  }
+
+  setSalespersonFilter(salesperson) {
+    this.selectedSalesperson = salesperson;
     this.emitChange();
   }
 
@@ -86,7 +136,31 @@ class CRMStore {
   }
 
   getState() {
-    const filteredCustomers = this.customers.filter(c => {
+    const role = getCurrentRole();
+    const user = getCurrentUser();
+    const isUserAdmin = role === USER_ROLES.ADMIN;
+
+    // 1. CONFIDENCIALIDADE (C): Filtragem de visibilidade por perfil
+    // Se for Funcionário (Employee), ele só pode ver os leads atribuídos a ele!
+    // Se for Admin, vê todos (com opção de filtro por vendedor)
+    const baseCustomers = this.customers.filter(c => {
+      if (!isUserAdmin) {
+        // Regra de Menor Privilégio (Least Privilege):
+        // Funcionário vê apenas leads associados ao seu e-mail/nome ou sem atribuição explícita
+        if (!c.assignedTo) return true;
+        const userEmail = (user && user.email ? user.email.toLowerCase() : '');
+        const assignedEmail = (c.assignedTo.email ? c.assignedTo.email.toLowerCase() : '');
+        return assignedEmail === userEmail || c.assignedTo.name?.includes('Lucas');
+      } else {
+        // Admin: pode filtrar por vendedor específico se desejar
+        if (this.selectedSalesperson !== 'all' && c.assignedTo && c.assignedTo.email !== this.selectedSalesperson) {
+          return false;
+        }
+        return true;
+      }
+    });
+
+    const filteredCustomers = baseCustomers.filter(c => {
       // Priority filter
       if (this.selectedPriority !== 'all' && c.priority !== this.selectedPriority) {
         return false;
@@ -99,28 +173,48 @@ class CRMStore {
       return true;
     });
 
-    const metrics = this.calculateMetrics();
-    const allTasks = this.extractAllTasks();
+    // Calcula métricas para os leads visíveis ao usuário atual
+    const metrics = this.calculateMetrics(baseCustomers);
+    const allTasks = this.extractAllTasks(baseCustomers);
+
+    // Permissões da Tríade CID
+    const permissions = {
+      isAdmin: isUserAdmin,
+      isEmployee: !isUserAdmin,
+      canDelete: isUserAdmin, // INTEGRIDADE: Somente Admin pode deletar registros
+      canViewGlobalFinance: isUserAdmin, // CONFIDENCIALIDADE: Somente Admin vê faturamento geral da empresa
+      canAccessCloudConfig: isUserAdmin, // CONFIDENCIALIDADE: Somente Admin altera chaves de API
+      canManageTeam: isUserAdmin,
+      canExportAll: isUserAdmin,
+      canDisasterRecovery: isUserAdmin // DISPONIBILIDADE: Somente Admin cria e restaura backups
+    };
 
     return {
-      allCustomers: this.customers,
-      filteredCustomers,
+      allCustomers: this.customers, // Raw list (for admin)
+      visibleCustomers: baseCustomers, // Filtered by role
+      filteredCustomers, // Filtered by role + search + priority
       metrics,
       tasks: allTasks,
       taskFilter: this.taskFilter,
       activeView: this.activeView,
       searchQuery: this.searchQuery,
       selectedPriority: this.selectedPriority,
-      storageMode: this.storageMode
+      selectedSalesperson: this.selectedSalesperson,
+      storageMode: this.storageMode,
+      permissions,
+      currentRole: role,
+      auditLogs: this.auditLogs,
+      availability: this.availability,
+      salesTeam: SALES_TEAM
     };
   }
 
   /**
-   * Consolidates all tasks from all leads
+   * Consolidates all tasks from visible leads
    */
-  extractAllTasks() {
+  extractAllTasks(customerList = this.customers) {
     const tasks = [];
-    this.customers.forEach(customer => {
+    customerList.forEach(customer => {
       if (Array.isArray(customer.tasks)) {
         customer.tasks.forEach(t => {
           tasks.push({
@@ -137,7 +231,7 @@ class CRMStore {
     return tasks.sort((a, b) => new Date(a.dueDate || 0) - new Date(b.dueDate || 0));
   }
 
-  calculateMetrics() {
+  calculateMetrics(customerList = this.customers) {
     let pipelineTotal = 0;
     let wonTotal = 0;
     let wonCount = 0;
@@ -163,7 +257,7 @@ class CRMStore {
     const currentYear = new Date().getFullYear();
     let currentMonthForecast = 0;
 
-    this.customers.forEach(c => {
+    customerList.forEach(c => {
       const val = Number(c.dealValue) || 0;
       const stage = c.stage || 'lead';
 

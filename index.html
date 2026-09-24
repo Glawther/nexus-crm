@@ -19,7 +19,122 @@
 </head>
 <body>
 
-  <div class="app-container">
+  <!-- ======================================================================
+       PORTAL DE AUTENTICAÇÃO & REGISTRO (Tríade CID & RBAC)
+       ====================================================================== -->
+  <div id="auth-portal-screen" class="auth-portal-wrapper" style="display: none;">
+    <div class="auth-portal-card">
+      <div class="auth-portal-header">
+        <div class="auth-brand-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <span>Tríade CID • RBAC Ativo</span>
+        </div>
+        <h1 class="auth-portal-title">Nexus CRM</h1>
+        <p class="auth-portal-subtitle">Plataforma Inteligente de Gestão Comercial &amp; Vendas</p>
+      </div>
+
+      <!-- Navigation Tabs (Login vs Registro) -->
+      <div class="auth-tabs-nav">
+        <button type="button" class="auth-tab-btn active" id="tab-auth-login">Acessar Conta</button>
+        <button type="button" class="auth-tab-btn" id="tab-auth-register">Criar Nova Conta</button>
+      </div>
+
+      <!-- TAB 1: FORMULÁRIO DE LOGIN -->
+      <div id="auth-panel-login">
+        <!-- Quick 1-Click Role Login Cards -->
+        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem;">
+          Acesso Rápido por Papel (Tríade CID):
+        </div>
+        <div class="auth-demo-grid">
+          <button type="button" class="auth-demo-btn" id="btn-quick-login-admin">
+            <span class="auth-demo-btn-title">🛡️ Administrador</span>
+            <span class="auth-demo-btn-desc">Visão 360°, faturamento geral e governança total.</span>
+          </button>
+          <button type="button" class="auth-demo-btn" id="btn-quick-login-employee">
+            <span class="auth-demo-btn-title">💼 Funcionário</span>
+            <span class="auth-demo-btn-desc">Lucas Mendes, carteira individual e funil de vendas.</span>
+          </button>
+        </div>
+
+        <div class="auth-divider">ou acesse com email corporativo</div>
+
+        <form id="form-auth-login">
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label for="login-input-email">E-mail Corporativo</label>
+            <input type="email" id="login-input-email" class="form-input" placeholder="seu.email@empresa.com" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label for="login-input-password">Senha de Acesso</label>
+            <input type="password" id="login-input-password" class="form-input" placeholder="••••••••" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="login-select-role">Papel de Acesso (RBAC)</label>
+            <select id="login-select-role" class="form-select">
+              <option value="admin">🛡️ Administrador do Sistema</option>
+              <option value="employee" selected>💼 Funcionário / Consultor de Vendas</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px;">
+            Acessar o Painel Nexus
+          </button>
+        </form>
+
+        <div style="margin-top: 1rem; text-align: center;">
+          <button type="button" class="btn btn-outline" id="btn-login-google-portal" style="width: 100%; justify-content: center; font-size: 0.85rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" style="margin-right: 6px;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            Entrar com Google Cloud
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: FORMULÁRIO DE REGISTRO (CRIAR CONTA) -->
+      <div id="auth-panel-register" style="display: none;">
+        <form id="form-auth-register">
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label for="reg-input-name">Nome Completo *</label>
+            <input type="text" id="reg-input-name" class="form-input" placeholder="Ex: Rodrigo Fagundes" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label for="reg-input-email">E-mail Corporativo *</label>
+            <input type="email" id="reg-input-email" class="form-input" placeholder="rodrigo@suaempresa.com" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label for="reg-input-company">Nome da Empresa</label>
+            <input type="text" id="reg-input-company" class="form-input" placeholder="Ex: Inova Soluções B2B">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label for="reg-select-role">Papel na Empresa (Tríade CID) *</label>
+            <select id="reg-select-role" class="form-select">
+              <option value="employee" selected>💼 Funcionário / Consultor de Vendas (Acesso à Carteira)</option>
+              <option value="admin">🛡️ Administrador do Sistema (Gestão Total &amp; Segurança)</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="reg-input-password">Criar Senha *</label>
+            <input type="password" id="reg-input-password" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px;">
+            Criar Conta e Acessar CRM
+          </button>
+        </form>
+      </div>
+
+      <div class="auth-footer-security">
+        🔒 Ambiente Corporativo Seguro com Criptografia de Ponta a Ponta<br>
+        Conformidade com a LGPD e Governança pela Tríade CID.
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container" id="app-container">
     
     <!-- ======================================================================
          Sidebar Navigation
@@ -61,6 +176,13 @@
             <span>Métricas &amp; Relatórios</span>
           </a>
         </li>
+        <li>
+          <a href="#security" class="nav-item" data-view="security" data-title="Segurança, Governança &amp; Tríade CID">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Tríade CID</span>
+            <span class="nav-count" id="nav-count-security" style="background:#eff6ff; color:#1d4ed8; font-weight:700;">RBAC</span>
+          </a>
+        </li>
       </ul>
 
       <div class="sidebar-footer">
@@ -89,6 +211,12 @@
       </div>
 
       <div class="header-actions">
+        <!-- Import Leads Button -->
+        <button type="button" class="btn btn-outline btn-sm" id="btn-open-import-modal" title="Importar contatos de planilha Excel ou CSV">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Importar Leads</span>
+        </button>
+
         <!-- Export CSV Button -->
         <button type="button" class="btn btn-outline btn-sm" id="btn-export-csv" title="Exportar dados para planilha Excel / CSV">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -152,6 +280,7 @@
                 <tr>
                   <th>Cliente &amp; Empresa</th>
                   <th>Contato</th>
+                  <th>Responsável</th>
                   <th>Valor Negócio</th>
                   <th>Estágio Atual</th>
                   <th>Prioridade</th>
@@ -250,6 +379,41 @@
           </div>
         </div>
 
+        <!-- Commercial Target & Commissions Card (Gamificação & Metas de Venda) -->
+        <div class="sales-goals-grid">
+          <div class="goal-card">
+            <div class="goal-header">
+              <span class="goal-title">🎯 Meta Comercial da Equipe</span>
+              <span id="target-percentage-badge" style="font-size: 0.75rem; font-weight: 700; color: #15803d; background: #f0fdf4; padding: 2px 7px; border-radius: 4px;">0% Atingido</span>
+            </div>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+              <div>
+                <span style="font-size: 1.4rem; font-weight: 800; color: #0f172a;" id="target-realized-value">R$ 0</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);"> de R$ 250.000 (Meta Q4)</span>
+              </div>
+            </div>
+            <div class="goal-progress-wrap">
+              <div class="goal-progress-bar">
+                <div class="goal-progress-fill" id="target-progress-fill" style="width: 0%;"></div>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
+              <span id="target-remaining-label">Faltam R$ 0 para a meta máxima</span>
+              <span style="font-weight: 600; color: #10b981;">Acelerador Ativo</span>
+            </div>
+          </div>
+
+          <div class="goal-card">
+            <div class="goal-header">
+              <span class="goal-title">💰 Extrato de Comissões &amp; Desempenho</span>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">Taxa: 5% por negócio ganho</span>
+            </div>
+            <div id="commissions-leaderboard">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
           <div class="table-container" style="padding: 1.5rem;">
             <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Distribuição de Valor por Etapa do Funil</h2>
@@ -323,6 +487,13 @@
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: Security & Governance (Tríade CID & RBAC) -->
+      <section class="view-section" id="view-security">
+        <div id="security-content-container">
+          <!-- Populated dynamically by ui-renderer.js -->
         </div>
       </section>
 
@@ -405,6 +576,15 @@
           <div class="form-group">
             <label for="input-customer-tags">Tags / Etiquetas (separadas por vírgula)</label>
             <input type="text" id="input-customer-tags" class="form-input" placeholder="Cloud, Enterprise, Q4">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="input-customer-assigned">Consultor Responsável (Atribuição RBAC / CID)</label>
+            <select id="input-customer-assigned" class="form-select">
+              <option value="lucas.vendas@nexuscrm.com">Lucas Mendes (Consultor de Vendas)</option>
+              <option value="mariana.vendas@nexuscrm.com">Mariana Costa (Consultora de Vendas)</option>
+              <option value="admin@nexuscrm.com">Administrador do Sistema</option>
+            </select>
           </div>
 
           <div class="form-group full-width">
@@ -731,8 +911,175 @@
     </form>
   </dialog>
 
+  <!-- ========================================================================
+       MODAL 5: Proposta Comercial Executiva (One-Click Proposal & PDF Print)
+       ======================================================================== -->
+  <dialog id="proposal-dialog" class="crm-dialog" style="max-width: 820px; width: 95%;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.25rem;">📄</span>
+        <h2 class="dialog-title" id="proposal-dialog-title">Proposta Comercial Executiva</h2>
+      </div>
+      <button type="button" class="action-btn" id="btn-close-proposal-dialog" aria-label="Fechar proposta">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="dialog-body" style="padding: 1.5rem;">
+      <div class="proposal-sheet" id="proposal-print-area">
+        <!-- Timbre / Header -->
+        <div class="proposal-letterhead">
+          <div>
+            <div class="proposal-company-name">NEXUS CRM</div>
+            <div style="font-size: 0.85rem; color: #475569; font-weight: 500;">Soluções Corporativas em Gestão e Vendas</div>
+            <div style="font-size: 0.78rem; color: #64748b;">CNPJ 12.345.678/0001-90 • contato@nexuscrm.com • (11) 4002-8922</div>
+          </div>
+          <div class="proposal-meta-box">
+            <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem;" id="prop-number">PROP-2026-001</div>
+            <div>Emissão: <strong id="prop-date">24/09/2026</strong></div>
+            <div>Validade: <strong>15 dias corridos</strong></div>
+          </div>
+        </div>
+
+        <!-- Dados das Partes -->
+        <div class="proposal-section-title">1. Dados do Cliente &amp; Proponente</div>
+        <div class="proposal-info-grid">
+          <div class="proposal-info-block">
+            <div style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Cliente / Contratante</div>
+            <div><strong>Nome:</strong> <span id="prop-client-name">-</span></div>
+            <div><strong>Empresa:</strong> <span id="prop-client-company">-</span></div>
+            <div><strong>Cargo:</strong> <span id="prop-client-role">-</span></div>
+            <div><strong>E-mail:</strong> <span id="prop-client-email">-</span></div>
+            <div><strong>Telefone:</strong> <span id="prop-client-phone">-</span></div>
+          </div>
+          <div class="proposal-info-block">
+            <div style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Consultor Comercial / Nexus CRM</div>
+            <div><strong>Responsável:</strong> <span id="prop-assigned-name">Lucas Mendes</span></div>
+            <div><strong>E-mail Comercial:</strong> <span id="prop-assigned-email">lucas.vendas@nexuscrm.com</span></div>
+            <div><strong>Segurança de Dados:</strong> <span style="color: #16a34a; font-weight: 600;">✓ Tríade CID &amp; LGPD</span></div>
+          </div>
+        </div>
+
+        <!-- Objeto e Escopo -->
+        <div class="proposal-section-title">2. Objeto da Proposta &amp; Escopo da Solução</div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; line-height: 1.6; color: #334155;">
+          <p id="prop-scope-text" style="margin-bottom: 0.75rem;">
+            Fornecimento de solução corporativa integrada Nexus CRM com automação de funil de vendas, módulo de inteligência artificial Gemini para qualificação de oportunidades, conformidade com a Tríade CID (Confidencialidade, Integridade e Disponibilidade) e suporte a sincronização em nuvem Google Cloud.
+          </p>
+          <ul style="padding-left: 1.25rem; color: #475569; font-size: 0.82rem;">
+            <li>Licenciamento completo e suporte técnico comercial especializado.</li>
+            <li>Auditoria contínua de transações com histórico de atividades.</li>
+            <li>Integração de comunicação rápida via WhatsApp com templates executivos.</li>
+          </ul>
+        </div>
+
+        <!-- Investimento -->
+        <div class="proposal-section-title">3. Investimento &amp; Condições Comerciais</div>
+        <div class="proposal-price-box">
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: #166534;">Valor Total do Investimento</div>
+            <div class="proposal-price-val" id="prop-price-display">R$ 0,00</div>
+            <div style="font-size: 0.75rem; color: #15803d;">Faturamento direto com emissão de Nota Fiscal de Serviços</div>
+          </div>
+          <div style="text-align: right; font-size: 0.82rem; color: #334155; line-height: 1.4;">
+            <div><strong>Condição Especial:</strong> 5% de desconto à vista</div>
+            <div><strong>Parcelamento:</strong> Até 3x sem juros (PIX / Boleto)</div>
+            <div><strong>Início das Atividades:</strong> Imediato após aceite</div>
+          </div>
+        </div>
+
+        <!-- Assinaturas -->
+        <div class="proposal-signatures">
+          <div class="proposal-sign-line">
+            <strong id="prop-sign-client">Cliente</strong><br>
+            De Acordo / Assinatura do Contratante
+          </div>
+          <div class="proposal-sign-line">
+            <strong>NEXUS CRM SOLUÇÕES CORPORATIVAS</strong><br>
+            Diretoria Comercial &amp; Vendas
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer" style="justify-content: space-between;">
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn btn-outline" id="btn-print-proposal">
+          🖨️ Imprimir / Salvar PDF
+        </button>
+        <button type="button" class="btn btn-outline" id="btn-send-proposal-wa" style="color: #15803d; border-color: #bbf7d0;">
+          💬 Enviar no WhatsApp
+        </button>
+      </div>
+      <button type="button" class="btn btn-primary" id="btn-close-proposal-footer">Fechar</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================
+       MODAL 6: Importador Rápido de Leads (Excel, CSV e Copiar/Colar)
+       ======================================================================== -->
+  <dialog id="import-dialog" class="crm-dialog" style="max-width: 680px; width: 95%;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.25rem;">📥</span>
+        <h2 class="dialog-title">Importar Leads (Planilha Excel / CSV)</h2>
+      </div>
+      <button type="button" class="action-btn" id="btn-close-import-dialog" aria-label="Fechar importador">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="dialog-body">
+      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: #475569; line-height: 1.4;">
+        <strong>Importação Rápida:</strong> Carregue um arquivo <code>.csv</code> ou cole seus contatos abaixo. Formato recomendado por linha:<br>
+        <code>Nome, Empresa, Telefone, Valor Estimado, Email</code>
+      </div>
+
+      <div class="import-dropzone" id="import-dropzone-area">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="margin-bottom: 0.5rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.25rem;">Clique para selecionar arquivo .CSV ou arraste aqui</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Suporta arquivos exportados do Excel, Google Sheets ou outros CRMs</div>
+        <input type="file" id="input-csv-file" accept=".csv, .txt" style="display: none;">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label for="textarea-import-raw">Ou Cole sua Lista de Contatos Aqui:</label>
+        <textarea id="textarea-import-raw" class="form-textarea" rows="4" placeholder="Exemplo:
+Marcos Vinicius, Banco Safra, +55 11 98888-1111, 45000, marcos@safra.com.br
+Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"></textarea>
+      </div>
+
+      <div id="import-preview-container" style="display: none; margin-top: 1rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span style="font-weight: 700; font-size: 0.85rem;" id="import-count-label">0 leads prontos para importação</span>
+        </div>
+        <div style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 6px;">
+          <table class="csv-preview-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Empresa</th>
+                <th>Telefone</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody id="import-preview-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-outline" id="btn-cancel-import">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-confirm-import" disabled>Confirmar e Inserir no Pipeline</button>
+    </div>
+  </dialog>
+
   <!-- Container for Toast Notifications -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Hidden input for Disaster Recovery Backup Restore (Tríade CID: Disponibilidade) -->
+  <input type="file" id="backup-file-input" style="display: none;" accept=".json">
 
   <!-- Entry Point Script -->
   <script type="module" src="js/app.js"></script>
