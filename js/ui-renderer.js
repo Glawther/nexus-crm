@@ -66,11 +66,11 @@ export function renderKPIs(metrics, permissions = {}) {
   const isEmp = permissions.isEmployee;
 
   container.innerHTML = `
-    <div class="kpi-card" style="--card-accent: #0f172a;">
+    <div class="kpi-card" style="--card-accent: var(--color-lead);">
       <div class="kpi-header">
         <span class="kpi-title">${isEmp ? 'Minha Carteira (Pipeline)' : 'Pipeline Geral em Aberto'}</span>
-        <div class="kpi-icon-wrap" style="color: #0f172a;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <div class="kpi-icon-wrap" style="color: var(--color-lead); background: var(--color-lead-bg); border-color: var(--color-lead-border);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
       </div>
       <div class="kpi-value">${formatBRL(metrics.pipelineTotal)}</div>
@@ -79,24 +79,24 @@ export function renderKPIs(metrics, permissions = {}) {
       </div>
     </div>
 
-    <div class="kpi-card" style="--card-accent: #16a34a;">
+    <div class="kpi-card" style="--card-accent: var(--color-won);">
       <div class="kpi-header">
         <span class="kpi-title">${isEmp ? 'Minhas Vendas Ganhas' : 'Negócios Fechados (Total)'}</span>
-        <div class="kpi-icon-wrap" style="color: #16a34a;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div class="kpi-icon-wrap" style="color: var(--color-won); background: var(--color-won-bg); border-color: var(--color-won-border);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         </div>
       </div>
-      <div class="kpi-value" style="color: #16a34a;">${formatBRL(metrics.wonTotal)}</div>
+      <div class="kpi-value" style="color: var(--color-won);">${formatBRL(metrics.wonTotal)}</div>
       <div class="kpi-subtext">
         <span class="kpi-badge positive">${metrics.wonCount} contratos</span> ${isEmp ? 'fechados por você' : 'assinados no total'}
       </div>
     </div>
 
-    <div class="kpi-card" style="--card-accent: #2563eb;">
+    <div class="kpi-card" style="--card-accent: var(--color-contact);">
       <div class="kpi-header">
         <span class="kpi-title">Taxa de Conversão</span>
-        <div class="kpi-icon-wrap" style="color: #2563eb;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        <div class="kpi-icon-wrap" style="color: var(--color-contact); background: var(--color-contact-bg); border-color: var(--color-contact-border);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
         </div>
       </div>
       <div class="kpi-value">${metrics.conversionRate}%</div>
@@ -105,11 +105,11 @@ export function renderKPIs(metrics, permissions = {}) {
       </div>
     </div>
 
-    <div class="kpi-card" style="--card-accent: #0284c7;">
+    <div class="kpi-card" style="--card-accent: var(--color-negotiation);">
       <div class="kpi-header">
         <span class="kpi-title">Ticket Médio</span>
-        <div class="kpi-icon-wrap" style="color: #0284c7;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+        <div class="kpi-icon-wrap" style="color: var(--color-negotiation); background: var(--color-negotiation-bg); border-color: var(--color-negotiation-border);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
         </div>
       </div>
       <div class="kpi-value">${formatBRL(metrics.avgTicket)}</div>
@@ -144,7 +144,7 @@ export function renderKanban(customers, metrics, permissions = {}) {
 
         <div class="cards-container">
           ${stageCustomers.length === 0 ? `
-            <div style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md); background: #ffffff;">
+            <div style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md); background: var(--bg-surface-elevated);">
               Nenhum lead nesta etapa
             </div>
           ` : stageCustomers.map(customer => renderLeadCard(customer, permissions)).join('')}
@@ -188,7 +188,7 @@ function renderLeadCard(customer, permissions = {}) {
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
         <div class="lead-value">${formatBRL(customer.dealValue)}</div>
         ${customer.expectedCloseDate ? `
-          <span style="font-size: 0.72rem; color: var(--text-muted); background: #f8fafc; border: 1px solid var(--border-subtle); padding: 1px 5px; border-radius: 4px;" title="Previsão de Fechamento">
+          <span style="font-size: 0.72rem; color: var(--text-muted); background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); padding: 1px 5px; border-radius: 4px;" title="Previsão de Fechamento">
             📅 ${new Date(customer.expectedCloseDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
           </span>
         ` : ''}
@@ -226,13 +226,13 @@ function renderLeadCard(customer, permissions = {}) {
       ${customer.tags && customer.tags.length > 0 ? `<div class="lead-tags">${tagsHtml}</div>` : ''}
 
       ${customer.stage === 'lost' && customer.lossReason ? `
-        <div style="font-size: 0.72rem; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; padding: 3px 6px; margin-bottom: 0.5rem;">
+        <div style="font-size: 0.72rem; color: var(--color-lost); background: var(--color-lost-bg); border: 1px solid var(--color-lost-border); border-radius: 4px; padding: 3px 6px; margin-bottom: 0.5rem;">
           🛑 Motivo: ${escapeHtml(customer.lossReason)}
         </div>
       ` : ''}
 
       ${customer.notes ? `
-        <div style="font-size: 0.72rem; color: var(--text-secondary); background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 4px; padding: 4px 6px; margin-bottom: 0.5rem; max-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(customer.notes)}">
+        <div style="font-size: 0.72rem; color: var(--text-secondary); background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 4px 6px; margin-bottom: 0.5rem; max-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(customer.notes)}">
           💬 ${escapeHtml(customer.notes)}
         </div>
       ` : ''}
@@ -257,7 +257,7 @@ function renderLeadCard(customer, permissions = {}) {
 
         <div class="card-actions">
 
-          <button class="action-btn" onclick="window.handleOpenProposalModal('${customer.id}')" title="Gerar Proposta Comercial Executiva (PDF / Impressão)" style="color: #0f172a;">
+          <button class="action-btn" onclick="window.handleOpenProposalModal('${customer.id}')" title="Gerar Proposta Comercial Executiva (PDF / Impressão)" style="color: var(--text-primary);">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           </button>
           <button class="action-btn" onclick="window.handleOpenLeadDetails('${customer.id}')" title="Histórico e Linha do Tempo">
@@ -295,7 +295,7 @@ export function renderTable(customers, permissions = {}) {
   if (customers.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted); background: #ffffff;">
+        <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted); background: var(--bg-surface);">
           Nenhum cliente ou lead encontrado com os filtros atuais.
         </td>
       </tr>
@@ -480,8 +480,8 @@ export function renderDetailedMetrics(metrics, allCustomers = [], permissions = 
 
   if (targetBadge) {
     targetBadge.textContent = `${targetPct}% Atingido`;
-    targetBadge.style.background = targetPct >= 70 ? '#f0fdf4' : '#fffbeb';
-    targetBadge.style.color = targetPct >= 70 ? '#15803d' : '#b45309';
+    targetBadge.style.background = targetPct >= 70 ? 'var(--color-won-bg)' : 'var(--color-proposal-bg)';
+    targetBadge.style.color = targetPct >= 70 ? 'var(--color-won)' : 'var(--color-proposal)';
   }
   if (targetRealized) targetRealized.textContent = formatBRL(wonVal);
   if (targetFill) targetFill.style.width = `${targetPct}%`;
@@ -557,7 +557,7 @@ export function renderDetailedMetrics(metrics, allCustomers = [], permissions = 
               <span style="font-weight: 500; color: var(--text-primary);">${r.label}</span>
               <span style="font-weight: 600; color: #dc2626;">${r.count} (${pct}%)</span>
             </div>
-            <div style="width: 100%; height: 6px; background: #fee2e2; border-radius: 3px; overflow: hidden;">
+            <div style="width: 100%; height: 6px; background: var(--bg-surface-elevated); border-radius: 3px; overflow: hidden;">
               <div style="height: 100%; width: ${pct}%; background: #dc2626; border-radius: 3px;"></div>
             </div>
           </div>
@@ -708,18 +708,50 @@ export function renderSecurityView(state) {
     <div class="cid-status-bar">
       <div>
         <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
-          <span style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary);">Tríade CID &amp; Governança Corporativa</span>
+          <span style="font-weight: 700; font-size: 1.15rem; color: var(--text-primary);">Segurança &amp; Governança de Redes</span>
           <span class="cid-role-badge ${state.currentRole}">
-            ${isAdm ? '🛡️ Perfil: Administrador' : '💼 Perfil: Funcionário / Consultor'}
+            ${isAdm ? '🛡️ Administrador' : '💼 Consultor de Vendas'}
           </span>
         </div>
         <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
-          Aplicação dos pilares de <strong>Confidencialidade, Integridade e Disponibilidade</strong> com controle de acesso baseado em papéis (RBAC).
+          Aplicação das normas de segurança da informação (ISO 27001 / Tríade CID): menor privilégio (RBAC), auditoria imutável e resiliência offline.
         </p>
       </div>
       <button type="button" class="btn btn-primary btn-sm" onclick="window.handleToggleRole()">
         ${isAdm ? 'Simular Visão do Funcionário 💼' : 'Alternar para Administrador 🛡️'}
       </button>
+    </div>
+
+    <!-- Barra de Conformidade com Normas de Segurança de Redes -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.65rem;">
+        <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--color-contact-bg); color: var(--color-contact); display: flex; align-items: center; justify-content: center; font-size: 1rem;">🔒</div>
+        <div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Criptografia em Redes</div>
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary);">TLS 1.3 &amp; AES-256</div>
+        </div>
+      </div>
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.65rem;">
+        <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--color-proposal-bg); color: var(--color-proposal); display: flex; align-items: center; justify-content: center; font-size: 1rem;">🛡️</div>
+        <div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Controle de Acesso</div>
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary);">RBAC Menor Privilégio</div>
+        </div>
+      </div>
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.65rem;">
+        <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--color-lost-bg); color: var(--color-lost); display: flex; align-items: center; justify-content: center; font-size: 1rem;">📝</div>
+        <div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Auditoria &amp; LGPD</div>
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary);">Logs Imutáveis &amp; CPF Seguro</div>
+        </div>
+      </div>
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.65rem;">
+        <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--color-won-bg); color: var(--color-won); display: flex; align-items: center; justify-content: center; font-size: 1rem;">⚡</div>
+        <div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Disponibilidade</div>
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary);">Zero Downtime (PWA)</div>
+        </div>
+      </div>
     </div>
 
     <!-- Painel de Gestão de Funcionários & Credenciais Corporativas (CID/RBAC) -->
@@ -828,7 +860,7 @@ export function renderSecurityView(state) {
                         <button type="button" class="btn btn-outline btn-sm btn-emp-action" onclick="window.handleToggleEmployeeStatus('${emp.id}')" title="${isBlocked ? 'Desbloquear acesso' : 'Bloquear acesso do funcionário'}">
                           ${isBlocked ? '🔓 Liberar' : '🛡️ Bloquear'}
                         </button>
-                        <button type="button" class="btn btn-outline btn-sm btn-emp-action" onclick="window.handleDeleteEmployee('${emp.id}')" title="Excluir colaborador" style="color: #dc2626;">
+                        <button type="button" class="btn btn-outline btn-sm btn-emp-action" onclick="window.handleDeleteEmployee('${emp.id}')" title="Excluir colaborador" style="color: var(--color-lost);">
                           🗑️
                         </button>
                       </div>
@@ -846,7 +878,7 @@ export function renderSecurityView(state) {
           <span style="font-size: 1.5rem;">🔒</span>
           <div>
             <h3 style="font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--text-primary);">
-              Gestão de Credenciais Corporativas (Menor Privilégio - Tríade CID)
+              Gestão de Credenciais Corporativas (Menor Privilégio - RBAC)
             </h3>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
               Como Consultor de Vendas, a emissão e revogação de acessos por CPF é centralizada no <strong>Administrador do Sistema</strong>.
@@ -863,18 +895,18 @@ export function renderSecurityView(state) {
           <div style="display: flex; align-items: center; gap: 0.65rem;">
             <div class="cid-icon-wrapper cid-icon-c">🔒</div>
             <div>
-              <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">1. Confidencialidade (C)</h3>
-              <span style="font-size: 0.72rem; color: var(--text-secondary);">Isolamento e Menor Privilégio</span>
+              <h3 style="font-size: 0.98rem; font-weight: 700; margin: 0; color: var(--text-primary);">1. Confidencialidade (C)</h3>
+              <span style="font-size: 0.72rem; color: var(--text-secondary);">Isolamento &amp; Menor Privilégio</span>
             </div>
           </div>
-          <span style="font-size: 0.7rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 7px; border-radius: 4px;">
+          <span style="font-size: 0.7rem; font-weight: 700; color: var(--color-contact); background: var(--color-contact-bg); border: 1px solid var(--color-contact-border); padding: 2px 7px; border-radius: 4px;">
             ${isAdm ? 'Acesso Global' : 'Acesso Restrito'}
           </span>
         </div>
         <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.5rem;">
           ${isAdm 
-            ? 'Como <strong>Administrador</strong>, você tem visão de 360° com faturamento global consolidado e acesso a todas as configurações e chaves de API.'
-            : 'Como <strong>Funcionário</strong>, você acessa <strong>apenas seus próprios leads</strong>. Faturamento global da empresa e configurações de chaves de API ficam ocultos.'
+            ? 'Como <strong>Administrador</strong>, você possui visão consolidada de faturamento global e parametrizações de infraestrutura.'
+            : 'Como <strong>Consultor</strong>, você acessa <strong>somente a sua carteira</strong>. Faturamento geral da empresa e chaves de API permanecem confidenciais.'
           }
         </p>
         <table class="rbac-table">
@@ -888,23 +920,23 @@ export function renderSecurityView(state) {
           <tbody>
             <tr>
               <td>Visualizar Oportunidades</td>
-              <td><span style="color:#16a34a; font-weight:600;">✅ Todos (${state.allCustomers.length})</span></td>
-              <td><span style="color:#2563eb; font-weight:600;">🔒 Seus Leads (${state.visibleCustomers.length})</span></td>
+              <td><span style="color: var(--color-won); font-weight: 600;">✅ Todos (${state.allCustomers.length})</span></td>
+              <td><span style="color: var(--color-contact); font-weight: 600;">🔒 Seus Leads (${state.visibleCustomers.length})</span></td>
             </tr>
             <tr>
               <td>Métricas de Faturamento Geral</td>
-              <td><span style="color:#16a34a; font-weight:600;">✅ Total</span></td>
-              <td><span style="color:#dc2626; font-weight:600;">🔒 Oculto</span></td>
+              <td><span style="color: var(--color-won); font-weight: 600;">✅ Total</span></td>
+              <td><span style="color: var(--color-lost); font-weight: 600;">🔒 Oculto</span></td>
             </tr>
             <tr>
               <td>Configurações Cloud / IA</td>
-              <td><span style="color:#16a34a; font-weight:600;">✅ Liberado</span></td>
-              <td><span style="color:#dc2626; font-weight:600;">🔒 Bloqueado</span></td>
+              <td><span style="color: var(--color-won); font-weight: 600;">✅ Liberado</span></td>
+              <td><span style="color: var(--color-lost); font-weight: 600;">🔒 Bloqueado</span></td>
             </tr>
             <tr>
               <td>Exportação Geral de Dados</td>
-              <td><span style="color:#16a34a; font-weight:600;">✅ Total</span></td>
-              <td><span style="color:#d97706; font-weight:600;">🔒 Restrito</span></td>
+              <td><span style="color: var(--color-won); font-weight: 600;">✅ Total</span></td>
+              <td><span style="color: var(--color-proposal); font-weight: 600;">🔒 Restrito</span></td>
             </tr>
           </tbody>
         </table>
@@ -916,21 +948,21 @@ export function renderSecurityView(state) {
           <div style="display: flex; align-items: center; gap: 0.65rem;">
             <div class="cid-icon-wrapper cid-icon-i">🛡️</div>
             <div>
-              <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">2. Integridade (I)</h3>
+              <h3 style="font-size: 0.98rem; font-weight: 700; margin: 0; color: var(--text-primary);">2. Integridade (I)</h3>
               <span style="font-size: 0.72rem; color: var(--text-secondary);">Trilha de Auditoria &amp; Imutabilidade</span>
             </div>
           </div>
-          <span style="font-size: 0.7rem; font-weight: 700; color: #dc2626; background: #fef2f2; padding: 2px 7px; border-radius: 4px;">
+          <span style="font-size: 0.7rem; font-weight: 700; color: var(--color-lost); background: var(--color-lost-bg); border: 1px solid var(--color-lost-border); padding: 2px 7px; border-radius: 4px;">
             Auditado
           </span>
         </div>
         <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.5rem;">
-          Garante que os dados do CRM sejam exatos, consistentes e protegidos contra mutações ou exclusões indevidas:
+          Garante a precisão e consistência das informações contra exclusões ou fraudes em operações:
         </p>
-        <ul style="font-size: 0.8rem; color: var(--text-primary); padding-left: 1.1rem; line-height: 1.6; margin: 0.5rem 0;">
-          <li><strong>Bloqueio de Exclusão:</strong> Funcionários não podem apagar leads do banco de dados (privilégio exclusivo de Administrador).</li>
-          <li><strong>Rastreabilidade Total:</strong> Todas as alterações (avanço de fase, edição, nova tarefa) são assinadas com o nome do operador.</li>
-          <li><strong>Motivos de Perda:</strong> Cancelamentos exigem preenchimento formal de motivo estratégico.</li>
+        <ul style="font-size: 0.79rem; color: var(--text-primary); padding-left: 1.1rem; line-height: 1.6; margin: 0.5rem 0;">
+          <li><strong>Bloqueio de Exclusão:</strong> Consultores não podem apagar leads (privilégio exclusivo de Administrador).</li>
+          <li><strong>Assinatura Digital de Ações:</strong> Toda transação é registrada com nome do operador e timestamp.</li>
+          <li><strong>Motivo de Perda Estratégico:</strong> Cancelamentos exigem formalização do motivo.</li>
         </ul>
       </div>
 
@@ -940,29 +972,29 @@ export function renderSecurityView(state) {
           <div style="display: flex; align-items: center; gap: 0.65rem;">
             <div class="cid-icon-wrapper cid-icon-d">⚡</div>
             <div>
-              <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">3. Disponibilidade (D)</h3>
+              <h3 style="font-size: 0.98rem; font-weight: 700; margin: 0; color: var(--text-primary);">3. Disponibilidade (D)</h3>
               <span style="font-size: 0.72rem; color: var(--text-secondary);">Resiliência &amp; Disaster Recovery</span>
             </div>
           </div>
-          <span style="font-size: 0.7rem; font-weight: 700; color: #16a34a; background: #f0fdf4; padding: 2px 7px; border-radius: 4px;">
+          <span style="font-size: 0.7rem; font-weight: 700; color: var(--color-won); background: var(--color-won-bg); border: 1px solid var(--color-won-border); padding: 2px 7px; border-radius: 4px;">
             ${state.availability.isOnline ? 'Online' : 'Resiliente'}
           </span>
         </div>
         <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.5rem;">
-          Garante que os consultores e administradores continuem operando mesmo com oscilações de conexão de rede:
+          Garante operação ininterrupta do time mesmo com instabilidade de rede ou queda de servidor:
         </p>
-        <div style="margin: 0.6rem 0; padding: 0.75rem; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 0.8rem;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Status da Rede:</span>
-            <strong>${state.availability.isOnline ? '🟢 Conectado à Internet' : '🟡 Modo Resiliente Offline'}</strong>
+        <div style="margin: 0.6rem 0; padding: 0.75rem; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 0.8rem; color: var(--text-primary);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-secondary);">Status da Conexão:</span>
+            <strong>${state.availability.isOnline ? '🟢 TLS 1.3 Seguro (Online)' : '🟡 Modo Resiliente Offline'}</strong>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Banco de Dados:</span>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-secondary);">Banco de Dados:</span>
             <strong>${state.storageMode === 'firestore' ? 'Google Cloud Firestore' : 'Cache Local / Híbrido'}</strong>
           </div>
           <div style="display: flex; justify-content: space-between;">
-            <span>Persistência Resiliente:</span>
-            <span style="color: #16a34a; font-weight: 600;">✓ Ativa (Zero Perda)</span>
+            <span style="color: var(--text-secondary);">Tolerância a Falhas:</span>
+            <span style="color: var(--color-won); font-weight: 600;">✓ Ativa (Zero Perda de Dados)</span>
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; margin-top: auto;">
@@ -981,9 +1013,9 @@ export function renderSecurityView(state) {
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
         <div>
           <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Trilha de Auditoria em Tempo Real (Audit Log)</h3>
-          <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Registro cronológico imutável de todas as transações e acessos realizados no sistema.</p>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Registro imutável em conformidade com ISO 27001 para auditoria de segurança da informação.</p>
         </div>
-        <span class="audit-tag" style="background: #eff6ff; color: #1e40af; border-color: #bfdbfe;">
+        <span class="audit-tag" style="background: var(--color-contact-bg); color: var(--color-contact); border: 1px solid var(--color-contact-border);">
           ${state.auditLogs.length} eventos registrados
         </span>
       </div>
