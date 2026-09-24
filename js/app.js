@@ -640,29 +640,32 @@ function setupDialogEvents() {
   const customerDialog = document.getElementById('customer-dialog');
   const customerForm = document.getElementById('customer-form');
   const btnNewLead = document.getElementById('btn-new-lead');
+  const btnBottomLeftLead = document.getElementById('btn-bottom-left-lead');
   const btnCloseDialog = document.getElementById('btn-close-customer-dialog');
   const btnCancelDialog = document.getElementById('btn-cancel-customer-dialog');
 
-  if (btnNewLead && customerDialog) {
-    btnNewLead.addEventListener('click', () => {
-      document.getElementById('dialog-customer-id').value = '';
-      document.getElementById('customer-dialog-title').textContent = 'Nova Oportunidade / Lead';
-      customerForm.reset();
-      document.getElementById('input-deal-stage').value = 'lead';
-      document.getElementById('input-deal-priority').value = 'medium';
-      document.getElementById('input-deal-forecast').value = '';
-      const assignedSelect = document.getElementById('input-customer-assigned');
-      if (assignedSelect) {
-        const emps = getEmployees();
-        assignedSelect.innerHTML = emps.map(emp => `
-          <option value="${escapeHtml(emp.email)}">${escapeHtml(emp.name)} (${escapeHtml(emp.jobTitle || 'Consultor')})</option>
-        `).join('') + `<option value="admin@nexuscrm.com">Administrador do Sistema</option>`;
-        const currentUser = getCurrentUser();
-        assignedSelect.value = currentUser?.email || (emps[0]?.email || 'lucas.vendas@nexuscrm.com');
-      }
-      customerDialog.showModal();
-    });
-  }
+  const openNewLead = () => {
+    if (!customerDialog) return;
+    document.getElementById('dialog-customer-id').value = '';
+    document.getElementById('customer-dialog-title').textContent = 'Nova Oportunidade / Lead';
+    customerForm.reset();
+    document.getElementById('input-deal-stage').value = 'lead';
+    document.getElementById('input-deal-priority').value = 'medium';
+    document.getElementById('input-deal-forecast').value = '';
+    const assignedSelect = document.getElementById('input-customer-assigned');
+    if (assignedSelect) {
+      const emps = getEmployees();
+      assignedSelect.innerHTML = emps.map(emp => `
+        <option value="${escapeHtml(emp.email)}">${escapeHtml(emp.name)} (${escapeHtml(emp.jobTitle || 'Consultor')})</option>
+      `).join('') + `<option value="admin@nexuscrm.com">Administrador do Sistema</option>`;
+      const currentUser = getCurrentUser();
+      assignedSelect.value = currentUser?.email || (emps[0]?.email || 'lucas.vendas@nexuscrm.com');
+    }
+    customerDialog.showModal();
+  };
+
+  if (btnNewLead) btnNewLead.addEventListener('click', openNewLead);
+  if (btnBottomLeftLead) btnBottomLeftLead.addEventListener('click', openNewLead);
 
   const closeDialog = () => customerDialog && customerDialog.close();
   if (btnCloseDialog) btnCloseDialog.addEventListener('click', closeDialog);

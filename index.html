@@ -21,10 +21,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/design-tokens.css?v=1.4.0">
-  <link rel="stylesheet" href="css/layout.css?v=1.4.0">
-  <link rel="stylesheet" href="css/components.css?v=1.4.0">
-  <link rel="stylesheet" href="css/animations.css?v=1.4.0">
+  <link rel="stylesheet" href="css/design-tokens.css?v=1.4.1">
+  <link rel="stylesheet" href="css/layout.css?v=1.4.1">
+  <link rel="stylesheet" href="css/components.css?v=1.4.1">
+  <link rel="stylesheet" href="css/animations.css?v=1.4.1">
   <!-- Pre-render Theme Application (Doctor+ Dark / Light) -->
   <script>
     (function() {
@@ -205,64 +205,23 @@
       </ul>
 
       <div class="sidebar-footer">
-        <button type="button" class="btn btn-secondary btn-sm" id="sidebar-gemini-btn" style="width: 100%; justify-content: flex-start; margin-bottom: 0.4rem;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-          <span style="font-size: 0.8rem;">Gemini AI Config</span>
+        <!-- Botão de Adicionar Lead no canto inferior esquerdo (Doctor+ Neon Lime) -->
+        <button type="button" class="btn btn-primary btn-bottom-left-lead" id="btn-bottom-left-lead" title="Cadastrar nova oportunidade comercial (+)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>+ Novo Lead</span>
         </button>
-        <button type="button" class="btn btn-secondary btn-sm" id="sidebar-firebase-btn" style="width: 100%; justify-content: flex-start;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          <span style="font-size: 0.8rem;">Google Cloud Config</span>
-        </button>
-      </div>
-    </aside>
 
-    <!-- ======================================================================
-         Main Application Wrapper (Header + Content Area)
-         ====================================================================== -->
-    <div class="main-wrapper" id="main-wrapper">
-
-      <!-- ======================================================================
-           Header Bar
-           ====================================================================== -->
-      <header class="header">
-        <div class="header-left">
-          <h1 class="page-title" id="current-page-title">Pipeline de Vendas</h1>
-          
-          <div class="search-box">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="global-search-input" placeholder="Buscar por cliente, empresa ou tag..." autocomplete="off">
-          </div>
-        </div>
-
-        <div class="header-actions">
-          <!-- Command Palette Trigger (Ctrl + K) -->
-          <button type="button" class="btn btn-outline btn-sm command-palette-trigger" id="btn-open-command-palette" title="Abrir busca rápida e comandos (Ctrl + K)">
-            <kbd>Ctrl K</kbd>
-            <span>Buscar</span>
-          </button>
-
-          <!-- Firebase / Google Cloud Connection Status Badge -->
-          <button type="button" class="connection-pill local" id="connection-status-pill" title="Configurar conexão com o Google Cloud Firestore">
-            <span class="pulse-dot"></span>
-            <span>Google Cloud</span>
-          </button>
-
-          <!-- Doctor+ Theme Switcher Toggle Pill -->
-          <button type="button" class="theme-toggle-switch" id="btn-header-theme-toggle" title="Alternar Modo Noturno / Claro (Alt + T)">
-            <span class="theme-switch-track">
-              <span class="theme-switch-thumb"></span>
+        <!-- Menu de Ferramentas e Exportação (Reposicionado na Barra Lateral) -->
+        <div class="dropdown-wrapper sidebar-tools-wrapper" id="header-tools-dropdown-wrapper">
+          <button type="button" class="btn btn-secondary btn-sm sidebar-tool-btn" id="btn-header-tools" title="Menu de Ferramentas, Importação e Atalhos">
+            <span style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 0.95rem;">⚡</span>
+              <span style="font-weight: 600;">Ferramentas</span>
             </span>
-            <span class="theme-toggle-label">Noturno</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-
-          <!-- Unified Tools & Actions Dropdown (Despoluição da Barra) -->
-          <div class="dropdown-wrapper" id="header-tools-dropdown-wrapper">
-            <button type="button" class="btn btn-outline btn-sm header-tools-btn" id="btn-header-tools" title="Menu de Ferramentas e Exportação">
-              <span>⚡ Ferramentas</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-          
-          <div class="dropdown-menu" id="header-tools-menu" style="display: none;">
+        
+          <div class="dropdown-menu sidebar-dropdown-menu" id="header-tools-menu" style="display: none;">
             <button type="button" class="dropdown-item" id="btn-menu-import">
               <span class="dropdown-item-icon">📥</span>
               <div class="dropdown-item-text">
@@ -287,16 +246,6 @@
               </div>
             </button>
 
-            <button type="button" class="dropdown-item" id="btn-menu-theme">
-              <span class="dropdown-item-icon">🌓</span>
-              <div class="dropdown-item-text">
-                <span class="dropdown-item-title" id="menu-theme-label">Ativar Modo Claro (☀️)</span>
-                <span class="dropdown-item-desc">Alternar visual (Atalho Alt + T)</span>
-              </div>
-            </button>
-
-            <div class="dropdown-divider"></div>
-            
             <button type="button" class="dropdown-item" id="btn-menu-shortcuts">
               <span class="dropdown-item-icon">⌨️</span>
               <div class="dropdown-item-text">
@@ -315,22 +264,69 @@
           </div>
         </div>
 
-        <!-- Hidden legacy triggers kept for direct keyboard shortcuts and store compatibility -->
+        <!-- Botões Compactos de Configuração Gemini / Google Cloud -->
+        <div class="sidebar-config-row">
+          <button type="button" class="btn btn-secondary btn-sm sidebar-config-btn" id="sidebar-gemini-btn" title="Configurar Inteligência Artificial Gemini">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <span>Gemini AI</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm sidebar-config-btn" id="sidebar-firebase-btn" title="Configurar Google Cloud Firestore">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span>Cloud</span>
+          </button>
+        </div>
+
+        <!-- Perfil do Usuário e Papel de Acesso (RBAC / Tríade CID) -->
+        <div id="auth-status-container"></div>
+      </div>
+    </aside>
+
+    <!-- ======================================================================
+         Main Application Wrapper (Header + Content Area)
+         ====================================================================== -->
+    <div class="main-wrapper" id="main-wrapper">
+
+      <!-- ======================================================================
+           Header Bar (Clean, Balanced & Ergonomic)
+           ====================================================================== -->
+      <header class="header">
+        <div class="header-left">
+          <h1 class="page-title" id="current-page-title">Pipeline de Vendas</h1>
+        </div>
+
+        <!-- BOTÃO CENTRALIZADO DE ADICIONAR LEAD / NOVA OPORTUNIDADE -->
+        <div class="header-center">
+          <button type="button" class="btn btn-primary btn-header-lead" id="btn-new-lead" title="Cadastrar nova oportunidade comercial (N)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>+ Nova Oportunidade</span>
+          </button>
+        </div>
+
+        <div class="header-right">
+          <!-- Campo de Busca Global -->
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="global-search-input" placeholder="Buscar cliente, empresa ou tag..." autocomplete="off">
+          </div>
+
+          <!-- Gatilho da Command Palette (Ctrl + K) -->
+          <button type="button" class="btn btn-outline btn-sm command-palette-trigger" id="btn-open-command-palette" title="Abrir busca rápida e comandos (Ctrl + K)">
+            <kbd>Ctrl K</kbd>
+          </button>
+
+          <!-- Status de Conexão com Google Cloud -->
+          <button type="button" class="connection-pill local" id="connection-status-pill" title="Configurar conexão com o Google Cloud Firestore">
+            <span class="pulse-dot"></span>
+            <span>Google Cloud</span>
+          </button>
+        </div>
+
+        <!-- Gatilhos ocultos para compatibilidade com atalhos de teclado e eventos -->
         <button type="button" id="btn-open-import-modal" style="display: none;"></button>
         <button type="button" id="btn-export-csv" style="display: none;"></button>
         <button type="button" id="btn-open-shortcuts" style="display: none;"></button>
         <button type="button" id="btn-install-pwa" style="display: none;"></button>
-
-        <!-- Google User Profile / Login -->
-        <div id="auth-status-container"></div>
-
-        <!-- New Lead Action Button (Primary CTA) -->
-        <button type="button" class="btn btn-primary" id="btn-new-lead">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>Nova Oportunidade</span>
-        </button>
-      </div>
-    </header>
+      </header>
 
     <!-- ======================================================================
          Main Content Area
@@ -1421,7 +1417,7 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
   <input type="file" id="backup-file-input" style="display: none;" accept=".json">
 
   <!-- Entry Point Script -->
-  <script type="module" src="js/app.js?v=1.4.0"></script>
+  <script type="module" src="js/app.js?v=1.4.1"></script>
 
 </body>
 </html>

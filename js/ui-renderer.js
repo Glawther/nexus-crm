@@ -618,7 +618,7 @@ export function renderLeadTimeline(customer) {
  * Updates User Authentication Status Badge
  */
 /**
- * Updates User Authentication Status Badge with Role (Admin vs Employee)
+ * Updates User Authentication Status Badge with Role (Admin vs Employee) in Sidebar Footer
  */
 export function renderAuthBadge(user) {
   const container = document.getElementById('auth-status-container');
@@ -630,28 +630,34 @@ export function renderAuthBadge(user) {
 
   if (user) {
     container.innerHTML = `
-      <div class="user-profile-badge" style="gap: 0.4rem; padding: 4px 8px;">
-        ${user.photoURL ? `<img src="${user.photoURL}" class="user-avatar-img" alt="${escapeHtml(user.name)}">` : `
-          <div style="width: 24px; height: 24px; border-radius: 50%; background: #0f172a; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:700;">
-            ${(user.name || 'U')[0].toUpperCase()}
+      <div class="sidebar-user-card" id="sidebar-user-card">
+        <div class="sidebar-user-avatar">
+          ${user.photoURL ? `<img src="${user.photoURL}" class="user-avatar-img" alt="${escapeHtml(user.name)}">` : `
+            <div class="sidebar-user-avatar-placeholder">
+              ${(user.name || 'U')[0].toUpperCase()}
+            </div>
+          `}
+        </div>
+        <div class="sidebar-user-details">
+          <span class="sidebar-user-name" title="${escapeHtml(user.name)}">${escapeHtml(user.name)}</span>
+          <div class="sidebar-user-role-line">
+            <span class="cid-role-badge ${roleClass}">
+              ${roleLabel}
+            </span>
           </div>
-        `}
-        <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1;">
-          <span style="font-weight: 600; font-size: 0.78rem;">${escapeHtml(user.name.split(' ')[0])}</span>
-          <span class="cid-role-badge ${roleClass}" style="padding: 1px 5px; font-size: 0.62rem; margin-top: 1px;">
-            ${roleLabel}
-          </span>
         </div>
         
-        <!-- Quick Switch Button for Role (Admin vs Employee) -->
-        <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-role" style="padding: 3px 6px; font-size: 0.7rem;" title="Alternar entre Administrador e Funcionário (RBAC)">
-          🔄
-        </button>
+        <div class="sidebar-user-actions">
+          <!-- Quick Switch Button for Role (Admin vs Employee) -->
+          <button type="button" class="btn-sidebar-user-action" id="btn-toggle-role" title="Alternar entre Administrador e Funcionário (RBAC)">
+            🔄
+          </button>
 
-        <!-- Return to Auth & Registration Portal -->
-        <button type="button" class="btn btn-outline btn-sm" id="btn-portal-logout" style="padding: 3px 6px; font-size: 0.7rem; color: #dc2626; border-color: #fecaca;" title="Encerrar sessão e retornar ao Portal de Login">
-          🚪 Sair
-        </button>
+          <!-- Return to Auth & Registration Portal -->
+          <button type="button" class="btn-sidebar-user-action logout" id="btn-portal-logout" title="Encerrar sessão e retornar ao Portal de Login">
+            🚪
+          </button>
+        </div>
       </div>
     `;
 
@@ -660,6 +666,8 @@ export function renderAuthBadge(user) {
 
     const btnPortalLogout = document.getElementById('btn-portal-logout');
     if (btnPortalLogout) btnPortalLogout.addEventListener('click', window.handleLogoutToPortal);
+  } else {
+    container.innerHTML = '';
   }
 }
 
