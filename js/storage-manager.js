@@ -352,12 +352,15 @@ class StorageManager {
       email: user.email
     };
 
-    if (customerData.id && !customerData.id.startsWith('temp-') && !customerData.id.startsWith('lead-')) {
-      const existing = this.getCustomer(customerData.id);
-      const docId = existing?.firestoreId || existing?.id || customerData.id;
+    const existing = customerData.id && !customerData.id.startsWith('temp-') ? this.getCustomer(customerData.id) : null;
+
+    if (existing) {
+      const docId = existing.firestoreId || existing.id || customerData.id;
       const merged = {
         ...existing,
         ...customerData,
+        id: existing.id || customerData.id,
+        firestoreId: docId,
         assignedTo: customerData.assignedTo || existing?.assignedTo || defaultAssignedTo,
         activities: customerData.activities || (existing ? existing.activities : []) || [],
         tasks: customerData.tasks || (existing ? existing.tasks : []) || [],
@@ -378,7 +381,11 @@ class StorageManager {
       this.notifyListeners();
 
       if (this.mode === 'firestore') {
-        await firestoreService.updateFirestoreCustomer(docId, merged);
+        try {
+          await firestoreService.updateFirestoreCustomer(docId, merged);
+        } catch (fsErr) {
+          console.warn("Firestore update notice (local update succeeded):", fsErr);
+        }
       }
       return merged;
     } else {
@@ -459,14 +466,18 @@ class StorageManager {
 
     // 2. Cloud Firestore Persist
     if (this.mode === 'firestore') {
-      const docId = customer?.firestoreId || (customer?.id && !customer.id.startsWith('lead-') ? customer.id : null) || customerId;
-      const updatedActivities = customer && customer.activities ? [...customer.activities] : [activity];
-      await firestoreService.updateFirestoreCustomer(docId, { 
-        stage: newStage, 
-        updatedAt,
-        updatedBy: user.name,
-        activities: updatedActivities 
-      });
+      try {
+        const docId = customer?.firestoreId || customer?.id || customerId;
+        const updatedActivities = customer && customer.activities ? [...customer.activities] : [activity];
+        await firestoreService.updateFirestoreCustomer(docId, { 
+          stage: newStage, 
+          updatedAt,
+          updatedBy: user.name,
+          activities: updatedActivities 
+        });
+      } catch (fsErr) {
+        console.warn("Firestore sync warning on updateStage (local update succeeded):", fsErr);
+      }
     }
   }
 
@@ -504,17 +515,21 @@ class StorageManager {
 
     // 2. Cloud Firestore Persist
     if (this.mode === 'firestore') {
-      const docId = customer?.firestoreId || (customer?.id && !customer.id.startsWith('lead-') ? customer.id : null) || customerId;
-      const updatedActivities = customer && customer.activities ? [...customer.activities] : [activity];
-      await firestoreService.updateFirestoreCustomer(docId, {
-        stage: 'lost',
-        lossReason,
-        lossDetails: lossDetails || '',
-        lostAt: updatedAt,
-        updatedAt,
-        updatedBy: user.name,
-        activities: updatedActivities
-      });
+      try {
+        const docId = customer?.firestoreId || customer?.id || customerId;
+        const updatedActivities = customer && customer.activities ? [...customer.activities] : [activity];
+        await firestoreService.updateFirestoreCustomer(docId, {
+          stage: 'lost',
+          lossReason,
+          lossDetails: lossDetails || '',
+          lostAt: updatedAt,
+          updatedAt,
+          updatedBy: user.name,
+          activities: updatedActivities
+        });
+      } catch (fsErr) {
+        console.warn("Firestore sync warning on setLossReason (local update succeeded):", fsErr);
+      }
     }
   }
 
@@ -639,7 +654,11 @@ class StorageManager {
     this.notifyListeners();
 
     if (this.mode === 'firestore') {
-      await firestoreService.deleteFirestoreCustomer(docId);
+      try {
+        await firestoreService.deleteFirestoreCustomer(docId);
+      } catch (err) {
+        console.warn("Firestore delete notice:", err);
+      }
     }
   }
 

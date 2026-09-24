@@ -632,8 +632,12 @@ function setupDialogEvents() {
       document.getElementById('input-deal-forecast').value = '';
       const assignedSelect = document.getElementById('input-customer-assigned');
       if (assignedSelect) {
+        const emps = getEmployees();
+        assignedSelect.innerHTML = emps.map(emp => `
+          <option value="${escapeHtml(emp.email)}">${escapeHtml(emp.name)} (${escapeHtml(emp.jobTitle || 'Consultor')})</option>
+        `).join('') + `<option value="admin@nexuscrm.com">Administrador do Sistema</option>`;
         const currentUser = getCurrentUser();
-        assignedSelect.value = currentUser?.email || 'lucas.vendas@nexuscrm.com';
+        assignedSelect.value = currentUser?.email || (emps[0]?.email || 'lucas.vendas@nexuscrm.com');
       }
       customerDialog.showModal();
     });
@@ -663,7 +667,14 @@ function setupDialogEvents() {
       // Consultor atribuído (RBAC / CID)
       const assignedSelect = document.getElementById('input-customer-assigned');
       const assignedEmail = assignedSelect ? assignedSelect.value : 'lucas.vendas@nexuscrm.com';
-      const assignedMember = SALES_TEAM.find(m => m.email === assignedEmail) || {
+      const emps = getEmployees();
+      const allTeam = [...emps, ...SALES_TEAM];
+      const matched = allTeam.find(m => m.email === assignedEmail);
+      const assignedMember = matched ? {
+        id: matched.id || 'employee-user-02',
+        name: matched.name,
+        email: matched.email
+      } : {
         id: 'employee-user-02',
         name: 'Lucas Mendes (Consultor)',
         email: assignedEmail
@@ -727,6 +738,10 @@ window.handleOpenEditCustomer = function(customerId) {
 
   const assignedSelect = document.getElementById('input-customer-assigned');
   if (assignedSelect) {
+    const emps = getEmployees();
+    assignedSelect.innerHTML = emps.map(emp => `
+      <option value="${escapeHtml(emp.email)}">${escapeHtml(emp.name)} (${escapeHtml(emp.jobTitle || 'Consultor')})</option>
+    `).join('') + `<option value="admin@nexuscrm.com">Administrador do Sistema</option>`;
     assignedSelect.value = customer.assignedTo?.email || 'lucas.vendas@nexuscrm.com';
   }
 
