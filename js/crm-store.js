@@ -146,11 +146,30 @@ class CRMStore {
     const baseCustomers = this.customers.filter(c => {
       if (!isUserAdmin) {
         // Regra de Menor Privilégio (Least Privilege):
-        // Funcionário vê apenas leads associados ao seu e-mail/nome ou sem atribuição explícita
+        // Funcionário vê leads da sua carteira, leads criados por ele, e leads gerais sem atribuição ou em triagem
         if (!c.assignedTo) return true;
         const userEmail = (user && user.email ? user.email.toLowerCase() : '');
+        const userName = (user && user.name ? user.name.toLowerCase() : '');
         const assignedEmail = (c.assignedTo.email ? c.assignedTo.email.toLowerCase() : '');
-        return assignedEmail === userEmail || c.assignedTo.name?.includes('Lucas');
+        const assignedName = (c.assignedTo.name ? c.assignedTo.name.toLowerCase() : '');
+        const createdBy = (c.createdBy ? c.createdBy.toLowerCase() : '');
+
+        // 1. Criado pelo funcionário: sempre visível
+        if (createdBy && (createdBy.includes('lucas') || (userName && createdBy.includes(userName)))) {
+          return true;
+        }
+
+        // 2. Atribuído explicitamente ao funcionário (email ou nome)
+        if (assignedEmail === userEmail || (userEmail && assignedEmail.includes(userEmail)) || assignedName.includes('lucas') || (userName && assignedName.includes(userName))) {
+          return true;
+        }
+
+        // 3. Leads gerais do sistema (atribuídos ao Admin ou equipe geral para triagem / pool comum)
+        if (assignedEmail === 'admin@nexuscrm.com' || assignedName.includes('administrador') || !assignedEmail) {
+          return true;
+        }
+
+        return false;
       } else {
         // Admin: pode filtrar por vendedor específico se desejar
         if (this.selectedSalesperson !== 'all' && c.assignedTo && c.assignedTo.email !== this.selectedSalesperson) {

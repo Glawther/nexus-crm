@@ -323,9 +323,24 @@
             <span class="filter-pill" data-priority="medium">Média Prioridade</span>
             <span class="filter-pill" data-priority="low">Baixa Prioridade</span>
           </div>
-          <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            <span>Arraste os cards entre as colunas para atualizar o estágio</span>
+          <div class="pipeline-nav-controls">
+            <div class="kanban-stage-pills" id="kanban-stage-pills" aria-label="Navegação rápida por estágio">
+              <button type="button" class="stage-nav-pill" onclick="window.scrollToKanbanStage('lead')" title="Ir para Novo Lead">Novo Lead</button>
+              <button type="button" class="stage-nav-pill" onclick="window.scrollToKanbanStage('contacted')" title="Ir para Primeiro Contato">Contato</button>
+              <button type="button" class="stage-nav-pill" onclick="window.scrollToKanbanStage('proposal')" title="Ir para Proposta Enviada">Proposta</button>
+              <button type="button" class="stage-nav-pill" onclick="window.scrollToKanbanStage('negotiation')" title="Ir para Em Negociação">Negociação</button>
+              <button type="button" class="stage-nav-pill" onclick="window.scrollToKanbanStage('won')" title="Ir para Fechado Ganho">Ganho</button>
+              <button type="button" class="stage-nav-pill" onclick="window.scrollToKanbanStage('lost')" title="Ir para Perdido">Perdido</button>
+            </div>
+            
+            <div class="kanban-scroll-arrows">
+              <button type="button" class="kanban-scroll-btn" id="btn-kanban-scroll-left" onclick="window.scrollKanbanHorizontally(-300)" title="Rolar Kanban para a esquerda">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button type="button" class="kanban-scroll-btn" id="btn-kanban-scroll-right" onclick="window.scrollKanbanHorizontally(300)" title="Rolar Kanban para a direita">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
           </div>
         </div>
 

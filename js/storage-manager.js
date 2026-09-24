@@ -332,7 +332,13 @@ class StorageManager {
   }
 
   getCustomer(id) {
-    return this.currentData.find(c => c.id === id) || null;
+    if (!id) return null;
+    return this.currentData.find(c => 
+      c.id === id || 
+      c.firestoreId === id || 
+      c.clientLeadId === id ||
+      (c.id && c.id.toString() === id.toString())
+    ) || null;
   }
 
   /**
@@ -341,13 +347,14 @@ class StorageManager {
   async saveCustomer(customerData) {
     const user = getCurrentUser() || { name: 'Operador', email: 'user@nexuscrm.com', role: 'admin' };
     const defaultAssignedTo = customerData.assignedTo || {
-      id: user.uid,
+      id: user.uid || 'employee-user-02',
       name: user.name,
       email: user.email
     };
 
-    if (customerData.id && !customerData.id.startsWith('temp-')) {
+    if (customerData.id && !customerData.id.startsWith('temp-') && !customerData.id.startsWith('lead-')) {
       const existing = this.getCustomer(customerData.id);
+      const docId = existing?.firestoreId || existing?.id || customerData.id;
       const merged = {
         ...existing,
         ...customerData,
@@ -360,23 +367,26 @@ class StorageManager {
 
       crmStore.addAuditLog('Edição de Oportunidade', `Lead "${merged.name}" (${merged.company}) atualizado por ${user.name} [${user.role}].`, merged);
 
-      if (this.mode === 'firestore') {
-        await firestoreService.updateFirestoreCustomer(customerData.id, merged);
+      // Optimistic update
+      const index = this.currentData.findIndex(c => c.id === customerData.id || c.firestoreId === docId);
+      if (index !== -1) {
+        this.currentData[index] = merged;
       } else {
-        const index = this.currentData.findIndex(c => c.id === customerData.id);
-        if (index !== -1) {
-          this.currentData[index] = merged;
-          this.saveLocalData();
-          this.notifyListeners();
-        }
+        this.currentData.unshift(merged);
       }
+      this.saveLocalData();
+      this.notifyListeners();
+
+      if (this.mode === 'firestore') {
+        await firestoreService.updateFirestoreCustomer(docId, merged);
+      }
+      return merged;
     } else {
       const newLead = {
         activities: [],
         tasks: [],
         assignedTo: defaultAssignedTo,
         ...customerData,
-        id: 'lead-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
         createdAt: new Date().toISOString(),
         createdBy: user.name,
         updatedAt: new Date().toISOString(),
@@ -396,11 +406,22 @@ class StorageManager {
       crmStore.addAuditLog('Criação de Oportunidade', `Novo lead "${newLead.name}" (${newLead.company}) cadastrado por ${user.name} [${user.role}].`, newLead);
 
       if (this.mode === 'firestore') {
-        await firestoreService.addFirestoreCustomer(newLead);
+        const result = await firestoreService.addFirestoreCustomer(newLead);
+        const index = this.currentData.findIndex(c => c.id === result.id || c.name === newLead.name);
+        if (index === -1) {
+          this.currentData.unshift(result);
+        } else {
+          this.currentData[index] = result;
+        }
+        this.saveLocalData();
+        this.notifyListeners();
+        return result;
       } else {
+        newLead.id = 'lead-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
         this.currentData.unshift(newLead);
         this.saveLocalData();
         this.notifyListeners();
+        return newLead;
       }
     }
   }
@@ -423,26 +444,29 @@ class StorageManager {
       timestamp: updatedAt
     };
 
-    crmStore.addAuditLog('Avanço de Funil', `Lead "${customer?.name}" movido de "${oldStage}" para "${newStage}" por ${user.name}.`, customer);
+    crmStore.addAuditLog('Avanço de Funil', `Lead "${customer?.name || customerId}" movido de "${oldStage}" para "${newStage}" por ${user.name}.`, customer);
 
+    // 1. Optimistic update (instant visual response on Kanban)
+    if (customer) {
+      customer.stage = newStage;
+      customer.updatedAt = updatedAt;
+      customer.updatedBy = user.name;
+      if (!Array.isArray(customer.activities)) customer.activities = [];
+      customer.activities.push(activity);
+      this.saveLocalData();
+      this.notifyListeners();
+    }
+
+    // 2. Cloud Firestore Persist
     if (this.mode === 'firestore') {
-      const updatedActivities = customer && customer.activities ? [...customer.activities, activity] : [activity];
-      await firestoreService.updateFirestoreCustomer(customerId, { 
+      const docId = customer?.firestoreId || customer?.id || customerId;
+      const updatedActivities = customer && customer.activities ? [...customer.activities] : [activity];
+      await firestoreService.updateFirestoreCustomer(docId, { 
         stage: newStage, 
         updatedAt,
         updatedBy: user.name,
         activities: updatedActivities 
       });
-    } else {
-      if (customer) {
-        customer.stage = newStage;
-        customer.updatedAt = updatedAt;
-        customer.updatedBy = user.name;
-        if (!Array.isArray(customer.activities)) customer.activities = [];
-        customer.activities.push(activity);
-        this.saveLocalData();
-        this.notifyListeners();
-      }
     }
   }
 
@@ -450,40 +474,47 @@ class StorageManager {
    * Saves loss reason when moving to lost
    */
   async setLossReason(customerId, lossReason, lossDetails) {
+    const user = getCurrentUser() || { name: 'Operador', role: 'admin' };
+    const customer = this.getCustomer(customerId);
     const updatedAt = new Date().toISOString();
     const activity = {
       id: 'act-' + Date.now(),
       type: 'loss',
       title: 'Oportunidade Marcada como Perdida',
       text: `Motivo: ${lossReason}. ${lossDetails ? 'Detalhes: ' + lossDetails : ''}`,
-      author: 'Você',
+      author: user.name,
       timestamp: updatedAt
     };
 
+    crmStore.addAuditLog('Perda de Oportunidade', `Lead "${customer?.name || customerId}" marcado como perdido. Motivo: ${lossReason}.`, customer);
+
+    // 1. Optimistic update
+    if (customer) {
+      customer.stage = 'lost';
+      customer.lossReason = lossReason;
+      customer.lossDetails = lossDetails || '';
+      customer.lostAt = updatedAt;
+      customer.updatedAt = updatedAt;
+      customer.updatedBy = user.name;
+      if (!Array.isArray(customer.activities)) customer.activities = [];
+      customer.activities.push(activity);
+      this.saveLocalData();
+      this.notifyListeners();
+    }
+
+    // 2. Cloud Firestore Persist
     if (this.mode === 'firestore') {
-      const customer = this.getCustomer(customerId);
-      const updatedActivities = customer && customer.activities ? [...customer.activities, activity] : [activity];
-      await firestoreService.updateFirestoreCustomer(customerId, {
+      const docId = customer?.firestoreId || customer?.id || customerId;
+      const updatedActivities = customer && customer.activities ? [...customer.activities] : [activity];
+      await firestoreService.updateFirestoreCustomer(docId, {
         stage: 'lost',
         lossReason,
         lossDetails: lossDetails || '',
         lostAt: updatedAt,
         updatedAt,
+        updatedBy: user.name,
         activities: updatedActivities
       });
-    } else {
-      const customer = this.getCustomer(customerId);
-      if (customer) {
-        customer.stage = 'lost';
-        customer.lossReason = lossReason;
-        customer.lossDetails = lossDetails || '';
-        customer.lostAt = updatedAt;
-        customer.updatedAt = updatedAt;
-        if (!Array.isArray(customer.activities)) customer.activities = [];
-        customer.activities.push(activity);
-        this.saveLocalData();
-        this.notifyListeners();
-      }
     }
   }
 
@@ -503,18 +534,18 @@ class StorageManager {
 
     const updatedAt = new Date().toISOString();
 
+    if (!Array.isArray(customer.activities)) customer.activities = [];
+    customer.activities.push(activity);
+    customer.updatedAt = updatedAt;
+    this.saveLocalData();
+    this.notifyListeners();
+
     if (this.mode === 'firestore') {
-      const updatedActivities = [...(customer.activities || []), activity];
-      await firestoreService.updateFirestoreCustomer(customerId, {
-        activities: updatedActivities,
+      const docId = customer.firestoreId || customer.id || customerId;
+      await firestoreService.updateFirestoreCustomer(docId, {
+        activities: customer.activities,
         updatedAt
       });
-    } else {
-      if (!Array.isArray(customer.activities)) customer.activities = [];
-      customer.activities.push(activity);
-      customer.updatedAt = updatedAt;
-      this.saveLocalData();
-      this.notifyListeners();
     }
   }
 
@@ -543,22 +574,21 @@ class StorageManager {
 
     const updatedAt = new Date().toISOString();
 
+    if (!Array.isArray(customer.tasks)) customer.tasks = [];
+    if (!Array.isArray(customer.activities)) customer.activities = [];
+    customer.tasks.push(task);
+    customer.activities.push(activity);
+    customer.updatedAt = updatedAt;
+    this.saveLocalData();
+    this.notifyListeners();
+
     if (this.mode === 'firestore') {
-      const updatedTasks = [...(customer.tasks || []), task];
-      const updatedActivities = [...(customer.activities || []), activity];
-      await firestoreService.updateFirestoreCustomer(customerId, {
-        tasks: updatedTasks,
-        activities: updatedActivities,
+      const docId = customer.firestoreId || customer.id || customerId;
+      await firestoreService.updateFirestoreCustomer(docId, {
+        tasks: customer.tasks,
+        activities: customer.activities,
         updatedAt
       });
-    } else {
-      if (!Array.isArray(customer.tasks)) customer.tasks = [];
-      if (!Array.isArray(customer.activities)) customer.activities = [];
-      customer.tasks.push(task);
-      customer.activities.push(activity);
-      customer.updatedAt = updatedAt;
-      this.saveLocalData();
-      this.notifyListeners();
     }
   }
 
@@ -576,16 +606,16 @@ class StorageManager {
     task.completedAt = task.completed ? new Date().toISOString() : null;
 
     const updatedAt = new Date().toISOString();
+    customer.updatedAt = updatedAt;
+    this.saveLocalData();
+    this.notifyListeners();
 
     if (this.mode === 'firestore') {
-      await firestoreService.updateFirestoreCustomer(customerId, {
+      const docId = customer.firestoreId || customer.id || customerId;
+      await firestoreService.updateFirestoreCustomer(docId, {
         tasks: customer.tasks,
         updatedAt
       });
-    } else {
-      customer.updatedAt = updatedAt;
-      this.saveLocalData();
-      this.notifyListeners();
     }
   }
 
@@ -603,12 +633,13 @@ class StorageManager {
     const user = getCurrentUser() || { name: 'Administrador' };
     crmStore.addAuditLog('Exclusão de Oportunidade', `Oportunidade "${customer?.name || customerId}" excluída definitivamente por ${user.name}.`, customer);
 
+    const docId = customer?.firestoreId || customer?.id || customerId;
+    this.currentData = this.currentData.filter(c => c.id !== customerId && c.firestoreId !== docId);
+    this.saveLocalData();
+    this.notifyListeners();
+
     if (this.mode === 'firestore') {
-      await firestoreService.deleteFirestoreCustomer(customerId);
-    } else {
-      this.currentData = this.currentData.filter(c => c.id !== customerId);
-      this.saveLocalData();
-      this.notifyListeners();
+      await firestoreService.deleteFirestoreCustomer(docId);
     }
   }
 

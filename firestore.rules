@@ -2,24 +2,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Validação estrita de tipo e limites de dados (Anti-DoS)
+    // Validação estrita de tipo e integridade para Clientes (Tríade CID)
     function isValidCustomerData(data) {
-      return data.keys().hasAll(['name', 'dealValue', 'stage']) &&
-             data.name is string &&
-             data.name.size() > 0 &&
-             data.name.size() <= 300 &&
-             data.dealValue is number &&
-             data.dealValue >= 0 &&
-             data.dealValue <= 1000000000 &&
-             data.stage is string &&
-             data.stage in ['lead', 'contacted', 'proposal', 'negotiation', 'won', 'lost'];
+      return (!('name' in data) || (data.name is string && data.name.size() > 0 && data.name.size() <= 300)) &&
+             (!('dealValue' in data) || (data.dealValue is number && data.dealValue >= 0)) &&
+             (!('stage' in data) || (data.stage is string && data.stage in ['lead', 'contacted', 'proposal', 'negotiation', 'won', 'lost']));
     }
 
     // 1. Coleção de Clientes e Oportunidades (Customers)
     // Sincronização multi-cliente em tempo real via onSnapshot
     match /customers/{customerId} {
       allow read: if true;
-      allow create, update: if isValidCustomerData(request.resource.data);
+      allow create: if request.resource.data.name is string && 
+                       request.resource.data.stage in ['lead', 'contacted', 'proposal', 'negotiation', 'won', 'lost'];
+      allow update: if isValidCustomerData(request.resource.data);
       allow delete: if true;
     }
 

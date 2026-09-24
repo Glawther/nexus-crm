@@ -261,6 +261,7 @@ window.handleDropCard = async function(event, targetStage) {
     await storage.updateStage(customerId, targetStage);
     const stageObj = STAGES.find(s => s.id === targetStage);
     showToast(`Oportunidade movida para "${stageObj ? stageObj.name : targetStage}".`, "success");
+    setTimeout(() => window.scrollToKanbanStage(targetStage), 100);
   } catch (err) {
     showToast("Erro ao mover estágio: " + err.message, "error");
   } finally {
@@ -269,6 +270,9 @@ window.handleDropCard = async function(event, targetStage) {
 };
 
 window.handleMoveStage = async function(customerId, newStage) {
+  const cust = storage.getCustomer(customerId);
+  const currentStage = cust ? cust.stage : null;
+
   if (newStage === 'lost') {
     window.handleTriggerLossReason(customerId);
     return;
@@ -278,8 +282,32 @@ window.handleMoveStage = async function(customerId, newStage) {
     await storage.updateStage(customerId, newStage);
     const stageObj = STAGES.find(s => s.id === newStage);
     showToast(`Oportunidade movida para "${stageObj ? stageObj.name : newStage}".`, "success");
+    setTimeout(() => window.scrollToKanbanStage(newStage), 100);
   } catch (err) {
+    // Revert select back to previous stage
+    const select = document.querySelector(`.lead-card[data-id="${customerId}"] .move-stage-select`);
+    if (select && currentStage) select.value = currentStage;
     showToast("Erro ao mover oportunidade: " + err.message, "error");
+  }
+};
+
+// ==========================================================================
+// Kanban Stage Navigation & Viewport Helpers
+// ==========================================================================
+window.scrollToKanbanStage = function(stageId) {
+  const container = document.getElementById('pipeline-columns');
+  const targetCol = document.querySelector(`.pipeline-column[data-stage="${stageId}"]`);
+  if (container && targetCol) {
+    targetCol.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    targetCol.classList.add('column-focus-pulse');
+    setTimeout(() => targetCol.classList.remove('column-focus-pulse'), 1200);
+  }
+};
+
+window.scrollKanbanHorizontally = function(amount) {
+  const container = document.getElementById('pipeline-columns');
+  if (container) {
+    container.scrollBy({ left: amount, behavior: 'smooth' });
   }
 };
 
@@ -292,11 +320,29 @@ function setupLossReasonEvents() {
   const btnClose = document.getElementById('btn-close-loss-dialog');
   const btnCancel = document.getElementById('btn-cancel-loss-dialog');
 
-  const closeDialog = () => dialog && dialog.close();
+  let activeLossCustomerId = null;
+
+  const closeDialog = () => {
+    if (dialog && dialog.open) dialog.close();
+    // If user cancelled, restore the select dropdown on card back to original stage
+    if (activeLossCustomerId) {
+      const cust = storage.getCustomer(activeLossCustomerId);
+      if (cust) {
+        const select = document.querySelector(`.lead-card[data-id="${activeLossCustomerId}"] .move-stage-select`);
+        if (select) select.value = cust.stage || 'negotiation';
+      }
+      activeLossCustomerId = null;
+    }
+  };
+
   if (btnClose) btnClose.addEventListener('click', closeDialog);
   if (btnCancel) btnCancel.addEventListener('click', closeDialog);
+  if (dialog) {
+    dialog.addEventListener('cancel', closeDialog);
+  }
 
   window.handleTriggerLossReason = function(customerId) {
+    activeLossCustomerId = customerId;
     document.getElementById('loss-customer-id').value = customerId;
     document.getElementById('select-loss-reason').value = 'price';
     document.getElementById('input-loss-details').value = '';
@@ -315,8 +361,10 @@ function setupLossReasonEvents() {
 
       try {
         await storage.setLossReason(customerId, reasonLabel, details);
+        activeLossCustomerId = null;
         dialog.close();
         showToast("Oportunidade arquivada como perdida.", "info");
+        setTimeout(() => window.scrollToKanbanStage('lost'), 100);
       } catch (err) {
         showToast("Erro ao registrar perda: " + err.message, "error");
       }
@@ -648,6 +696,9 @@ function setupDialogEvents() {
         await storage.saveCustomer(customerPayload);
         customerDialog.close();
         showToast(id ? "Oportunidade atualizada com sucesso!" : "Novo lead adicionado com sucesso!", "success");
+        setTimeout(() => {
+          window.scrollToKanbanStage(stage || 'lead');
+        }, 150);
       } catch (err) {
         showToast("Erro ao salvar: " + err.message, "error");
       }

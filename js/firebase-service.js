@@ -66,7 +66,12 @@ export async function subscribeToFirestoreCustomers(onData, onError) {
     (snapshot) => {
       const customers = [];
       snapshot.forEach((doc) => {
-        customers.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        customers.push({
+          ...data,
+          id: doc.id,
+          firestoreId: doc.id
+        });
       });
       onData(customers);
     },
@@ -86,14 +91,21 @@ export async function addFirestoreCustomer(customerData) {
   if (!db) throw new Error("Firestore não inicializado.");
   const { firestore } = await loadFirebaseModules();
   
+  const cleanData = { ...customerData };
+  if (cleanData.id && cleanData.id.startsWith('lead-')) {
+    cleanData.clientLeadId = cleanData.id;
+    delete cleanData.id;
+  }
+  delete cleanData.firestoreId;
+
   const payload = {
-    ...customerData,
+    ...cleanData,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
 
   const docRef = await firestore.addDoc(firestore.collection(db, "customers"), payload);
-  return { id: docRef.id, ...payload };
+  return { ...payload, id: docRef.id, firestoreId: docRef.id };
 }
 
 /**
@@ -103,14 +115,18 @@ export async function updateFirestoreCustomer(id, partialData) {
   if (!db) throw new Error("Firestore não inicializado.");
   const { firestore } = await loadFirebaseModules();
 
+  const cleanData = { ...partialData };
+  delete cleanData.id;
+  delete cleanData.firestoreId;
+
   const docRef = firestore.doc(db, "customers", id);
   const payload = {
-    ...partialData,
+    ...cleanData,
     updatedAt: new Date().toISOString()
   };
 
   await firestore.updateDoc(docRef, payload);
-  return { id, ...payload };
+  return { id, firestoreId: id, ...payload };
 }
 
 /**
