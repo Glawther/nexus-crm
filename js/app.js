@@ -70,68 +70,82 @@ let activeProposalCustomerId = null;
 // ==========================================================================
 // Initialization
 // ==========================================================================
-document.addEventListener('DOMContentLoaded', async () => {
-  setupNavigation();
-  setupFilterEvents();
-  setupDialogEvents();
-  setupFirebaseConfigModal();
-  setupGeminiModals();
-  setupExportEvents();
-  setupTasksEvents();
-  setupWhatsAppModalEvents();
-  setupLossReasonEvents();
-  setupLeadDetailsEvents();
-  setupBackupEvents();
-  setupProposalModalEvents();
-  setupImportModalEvents();
-  setupAuthPortalEvents();
-  setupCommandPalette();
-  setupKeyboardShortcuts();
-  setupPWA();
-  setupHeaderToolsMenu();
-  setupEmployeeManagementEvents();
+async function initApp() {
+  try {
+    setupNavigation();
+    setupFilterEvents();
+    setupDialogEvents();
+    setupFirebaseConfigModal();
+    setupGeminiModals();
+    setupExportEvents();
+    setupTasksEvents();
+    setupWhatsAppModalEvents();
+    setupLossReasonEvents();
+    setupLeadDetailsEvents();
+    setupBackupEvents();
+    setupProposalModalEvents();
+    setupImportModalEvents();
+    setupAuthPortalEvents();
+    setupCommandPalette();
+    setupKeyboardShortcuts();
+    setupPWA();
+    setupHeaderToolsMenu();
+    setupEmployeeManagementEvents();
 
-  // Setup Auth state
-  onAuthChange((user) => {
-    renderAuthBadge(user);
-    if (crmStore) crmStore.emitChange();
-  });
-  initAuth();
+    // Setup Auth state
+    onAuthChange((user) => {
+      renderAuthBadge(user);
+      if (crmStore) crmStore.emitChange();
+    });
+    initAuth();
 
-  // Subscribe state store changes to DOM rendering
-  crmStore.subscribe((state) => {
-    renderKPIs(state.metrics, state.permissions);
-    renderKanban(state.filteredCustomers, state.metrics, state.permissions);
-    renderTable(state.filteredCustomers, state.permissions);
-    renderTasksView(state.tasks, state.taskFilter, state.allCustomers);
-    renderDetailedMetrics(state.metrics, state.allCustomers, state.permissions);
-    renderSecurityView(state);
-    renderConnectionStatus(state.storageMode);
-    updateNavCounters(state);
-    applyRoleUIRestrictions(state.permissions);
+    // Subscribe state store changes to DOM rendering
+    crmStore.subscribe((state) => {
+      renderKPIs(state.metrics, state.permissions);
+      renderKanban(state.filteredCustomers, state.metrics, state.permissions);
+      renderTable(state.filteredCustomers, state.permissions);
+      renderTasksView(state.tasks, state.taskFilter, state.allCustomers);
+      renderDetailedMetrics(state.metrics, state.allCustomers, state.permissions);
+      renderSecurityView(state);
+      renderConnectionStatus(state.storageMode);
+      updateNavCounters(state);
+      applyRoleUIRestrictions(state.permissions);
 
-    // If lead details modal is currently open, refresh its timeline
-    if (activeLeadDetailsCustomerId) {
-      const currentCustomer = state.allCustomers.find(c => c.id === activeLeadDetailsCustomerId);
-      if (currentCustomer) {
-        renderLeadTimeline(currentCustomer);
+      // If lead details modal is currently open, refresh its timeline
+      if (activeLeadDetailsCustomerId) {
+        const currentCustomer = state.allCustomers.find(c => c.id === activeLeadDetailsCustomerId);
+        if (currentCustomer) {
+          renderLeadTimeline(currentCustomer);
+        }
       }
+    });
+
+    // Subscribe storage engine changes to CRM store
+    storage.subscribe((customers, mode) => {
+      crmStore.setCustomers(customers, mode);
+    });
+
+    // Initialize storage (Firestore or Local)
+    const initResult = await storage.init();
+    if (initResult.mode === 'firestore') {
+      showToast("Conectado em tempo real ao Google Cloud Firestore!", "success");
+    } else {
+      showToast("Nexus CRM iniciado em modo local de demonstração.", "info");
     }
-  });
-
-  // Subscribe storage engine changes to CRM store
-  storage.subscribe((customers, mode) => {
-    crmStore.setCustomers(customers, mode);
-  });
-
-  // Initialize storage (Firestore or Local)
-  const initResult = await storage.init();
-  if (initResult.mode === 'firestore') {
-    showToast("Conectado em tempo real ao Google Cloud Firestore!", "success");
-  } else {
-    showToast("Nexus CRM iniciado em modo local de demonstração.", "info");
+  } catch (err) {
+    console.error("Erro crítico na inicialização do Nexus CRM:", err);
+    // Assegurar que o container do aplicativo permaneça visível
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) appContainer.style.display = '';
   }
-});
+}
+
+// Inicialização imediata se o DOM já estiver pronto, ou no evento DOMContentLoaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 function applyRoleUIRestrictions(permissions) {
   const geminiBtn = document.getElementById('sidebar-gemini-btn');

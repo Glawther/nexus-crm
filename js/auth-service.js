@@ -112,14 +112,20 @@ export function setUserRole(newRole) {
 const SESSION_STORAGE_KEY = 'nexus_crm_session_active';
 
 export function isSessionActive() {
-  return localStorage.getItem(SESSION_STORAGE_KEY) === 'true';
+  const val = localStorage.getItem(SESSION_STORAGE_KEY);
+  if (val === null) {
+    // Default to active on first access so CRM loads directly into dashboard
+    localStorage.setItem(SESSION_STORAGE_KEY, 'true');
+    return true;
+  }
+  return val === 'true';
 }
 
 export function setSessionActive(active) {
   if (active) {
     localStorage.setItem(SESSION_STORAGE_KEY, 'true');
   } else {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.setItem(SESSION_STORAGE_KEY, 'false');
   }
 }
 

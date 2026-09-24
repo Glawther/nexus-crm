@@ -3,7 +3,7 @@
  * Tríade CID: Disponibilidade (D)
  */
 
-const CACHE_NAME = 'nexus-crm-v1.3.1';
+const CACHE_NAME = 'nexus-crm-v1.3.2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -65,7 +65,7 @@ self.addEventListener('fetch', (event) => {
 
   // Handle local app shell requests
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
         // Fetch new version in background (Stale-While-Revalidate)
         fetch(event.request).then((networkResponse) => {
@@ -94,7 +94,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // Fallback for navigation requests when offline
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match('/index.html', { ignoreSearch: true });
         }
       });
     })
