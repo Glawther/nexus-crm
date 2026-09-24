@@ -626,26 +626,26 @@ export function renderAuthBadge(user) {
 
   if (user) {
     container.innerHTML = `
-      <div class="user-profile-badge" style="gap: 0.5rem;">
+      <div class="user-profile-badge" style="gap: 0.4rem; padding: 4px 8px;">
         ${user.photoURL ? `<img src="${user.photoURL}" class="user-avatar-img" alt="${escapeHtml(user.name)}">` : `
           <div style="width: 24px; height: 24px; border-radius: 50%; background: #0f172a; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:700;">
             ${(user.name || 'U')[0].toUpperCase()}
           </div>
         `}
         <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1;">
-          <span style="font-weight: 600; font-size: 0.8rem;">${escapeHtml(user.name.split(' ')[0])}</span>
-          <span class="cid-role-badge ${roleClass}" style="padding: 1px 6px; font-size: 0.65rem; margin-top: 1px;">
+          <span style="font-weight: 600; font-size: 0.78rem;">${escapeHtml(user.name.split(' ')[0])}</span>
+          <span class="cid-role-badge ${roleClass}" style="padding: 1px 5px; font-size: 0.62rem; margin-top: 1px;">
             ${roleLabel}
           </span>
         </div>
         
-        <!-- Quick Switch Button for CIA Triad simulation -->
-        <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-role" style="padding: 3px 7px; font-size: 0.72rem;" title="Alternar entre Administrador e Funcionário para testar a Tríade CID">
-          Alternar Perfil
+        <!-- Quick Switch Button for Role (Admin vs Employee) -->
+        <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-role" style="padding: 3px 6px; font-size: 0.7rem;" title="Alternar entre Administrador e Funcionário (RBAC)">
+          🔄
         </button>
 
         <!-- Return to Auth & Registration Portal -->
-        <button type="button" class="btn btn-outline btn-sm" id="btn-portal-logout" style="padding: 3px 7px; font-size: 0.72rem; color: #dc2626; border-color: #fecaca;" title="Encerrar sessão e retornar ao Portal de Acesso e Registro">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-portal-logout" style="padding: 3px 6px; font-size: 0.7rem; color: #dc2626; border-color: #fecaca;" title="Encerrar sessão e retornar ao Portal de Login">
           🚪 Sair
         </button>
       </div>
@@ -670,16 +670,16 @@ export function renderConnectionStatus(mode) {
     pill.className = 'connection-pill online';
     pill.innerHTML = `
       <span class="pulse-dot"></span>
-      <span>Google Cloud Firestore</span>
+      <span>Google Cloud</span>
     `;
-    pill.title = 'Conectado em tempo real com o banco de dados do Google';
+    pill.title = 'Conectado em tempo real com o Google Cloud Firestore';
   } else {
     pill.className = 'connection-pill local';
     pill.innerHTML = `
       <span class="pulse-dot" style="background-color: #d97706; box-shadow: 0 0 6px #d97706;"></span>
-      <span>Modo Local / Demo</span>
+      <span>Modo Local</span>
     `;
-    pill.title = 'Clique para conectar suas credenciais do Firebase';
+    pill.title = 'Operando em modo local. Clique para sincronizar com Google Cloud';
   }
 }
 

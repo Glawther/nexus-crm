@@ -9,14 +9,16 @@ const STORAGE_KEYS = {
   APP_PREFS: 'nexus_crm_preferences'
 };
 
-// Default empty config structure required by Firebase SDK
+// Default active credentials for Google Cloud Firestore (nexuscrm-d8e13)
 export const defaultFirebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  projectId: "nexuscrm-d8e13",
+  appId: "1:723888013412:web:5197621060dd486fb41f71",
+  databaseURL: "https://nexuscrm-d8e13-default-rtdb.firebaseio.com",
+  storageBucket: "nexuscrm-d8e13.firebasestorage.app",
+  apiKey: "AIzaSyCjJcdEhHZxUGMH2jubCqCxqBAU6kQNZIA",
+  authDomain: "nexuscrm-d8e13.firebaseapp.com",
+  messagingSenderId: "723888013412",
+  measurementId: "G-1W84EPW08S"
 };
 
 /**
@@ -34,7 +36,7 @@ export function getSavedFirebaseConfig() {
   } catch (err) {
     console.warn("Could not load stored Firebase config:", err);
   }
-  return null;
+  return defaultFirebaseConfig;
 }
 
 /**

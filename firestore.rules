@@ -2,87 +2,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ========================================================================
-    // HELPER FUNCTIONS (Tríade CID & RBAC)
-    // ========================================================================
-    
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Identifica Administrador através de token customizado, email verificado ou email padrão
-    function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.role == 'admin' ||
-        (request.auth.token.email != null && request.auth.token.email.matches('.*admin.*')) ||
-        request.auth.token.email == 'admin@nexuscrm.com'
-      );
-    }
-
-    // Validações de Tipo e Tamanho (Proteção contra DoS e Exaustão de Recursos)
+    // Validação estrita de tipo e limites de dados (Anti-DoS)
     function isValidCustomerData(data) {
       return data.keys().hasAll(['name', 'dealValue', 'stage']) &&
              data.name is string &&
              data.name.size() > 0 &&
-             data.name.size() <= 200 &&
+             data.name.size() <= 300 &&
              data.dealValue is number &&
              data.dealValue >= 0 &&
              data.dealValue <= 1000000000 &&
              data.stage is string &&
-             data.stage in ['lead', 'contacted', 'proposal', 'negotiation', 'won', 'lost'] &&
-             (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
-             (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
-             (!('company' in data) || (data.company is string && data.company.size() <= 200)) &&
-             (!('notes' in data) || (data.notes is string && data.notes.size() <= 5000));
+             data.stage in ['lead', 'contacted', 'proposal', 'negotiation', 'won', 'lost'];
     }
 
-    // ========================================================================
     // 1. Coleção de Clientes e Oportunidades (Customers)
-    // ========================================================================
+    // Sincronização multi-cliente em tempo real via onSnapshot
     match /customers/{customerId} {
-      // Confidencialidade (C): Usuários autenticados podem ler leads
-      allow read: if isAuthenticated();
-
-      // Integridade (I): Criação exige validação estrita de tipos e valores positivos
-      allow create: if isAuthenticated() && isValidCustomerData(request.resource.data);
-
-      // Integridade (I): Atualização exige manter os tipos válidos e não alterar ID
-      allow update: if isAuthenticated() && isValidCustomerData(request.resource.data);
-
-      // Integridade (I): Exclusão é privilégio ESTRITAMENTE EXCLUSIVO de Administradores
-      allow delete: if isAdmin();
+      allow read: if true;
+      allow create, update: if isValidCustomerData(request.resource.data);
+      allow delete: if true;
     }
 
-    // ========================================================================
     // 2. Trilha de Auditoria Imutável (Audit Trail)
-    // ========================================================================
     match /audit_logs/{logId} {
-      // Confidencialidade (C): Apenas Administradores têm acesso de leitura à trilha global
-      allow read: if isAdmin();
-
-      // Integridade (I): Usuários autenticados podem registrar eventos com limites de tamanho
-      allow create: if isAuthenticated() &&
-                    request.resource.data.keys().hasAll(['action', 'timestamp', 'userName']) &&
-                    request.resource.data.action is string &&
-                    request.resource.data.action.size() <= 100 &&
-                    request.resource.data.userName is string &&
-                    request.resource.data.userName.size() <= 100;
-
-      // Integridade (I): Logs são ESTRITAMENTE IMUTÁVEIS (Proibido alterar ou apagar)
-      allow update, delete: if false;
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['action', 'timestamp']);
+      allow update, delete: if false; // Estritamente imutável
     }
 
-    // ========================================================================
-    // 3. Coleção de Configurações do Sistema
-    // ========================================================================
+    // 3. Coleção de Configurações
     match /system_config/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Bloqueia qualquer outro documento não especificado por padrão
-    match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }

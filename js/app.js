@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupCommandPalette();
   setupKeyboardShortcuts();
   setupPWA();
+  setupHeaderToolsMenu();
 
   // Setup Auth state
   onAuthChange((user) => {
@@ -1699,6 +1700,100 @@ function setupPWA() {
     showToast("Nexus CRM configurado como aplicativo nativo!", "success");
   });
 }
+
+// ==========================================================================
+// Unified Header Tools & Actions Dropdown Menu
+// ==========================================================================
+function setupHeaderToolsMenu() {
+  const btnTools = document.getElementById('btn-header-tools');
+  const menu = document.getElementById('header-tools-menu');
+  const btnMenuImport = document.getElementById('btn-menu-import');
+  const btnMenuExportCsv = document.getElementById('btn-menu-export-csv');
+  const btnMenuExportAudit = document.getElementById('btn-menu-export-audit');
+  const btnMenuShortcuts = document.getElementById('btn-menu-shortcuts');
+  const btnMenuPwa = document.getElementById('btn-menu-pwa');
+  const legacyInstallBtn = document.getElementById('btn-install-pwa');
+
+  if (!btnTools || !menu) return;
+
+  function toggleMenu(e) {
+    if (e) e.stopPropagation();
+    const isHidden = menu.style.display === 'none' || !menu.style.display;
+    menu.style.display = isHidden ? 'block' : 'none';
+    btnTools.classList.toggle('active', isHidden);
+  }
+
+  function closeMenu() {
+    menu.style.display = 'none';
+    btnTools.classList.remove('active');
+  }
+
+  btnTools.addEventListener('click', toggleMenu);
+
+  document.addEventListener('click', (e) => {
+    if (!menu.contains(e.target) && e.target !== btnTools) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu.style.display === 'block') {
+      closeMenu();
+    }
+  });
+
+  if (btnMenuImport) {
+    btnMenuImport.addEventListener('click', () => {
+      closeMenu();
+      const importDialog = document.getElementById('import-dialog');
+      if (importDialog) importDialog.showModal();
+    });
+  }
+
+  if (btnMenuExportCsv) {
+    btnMenuExportCsv.addEventListener('click', () => {
+      closeMenu();
+      const exportBtn = document.getElementById('btn-export-csv');
+      if (exportBtn) exportBtn.click();
+    });
+  }
+
+  if (btnMenuExportAudit) {
+    btnMenuExportAudit.addEventListener('click', () => {
+      closeMenu();
+      try {
+        const state = crmStore.getState();
+        exportAuditLogsToCSV(state.auditLogs);
+        showToast("Relatório de auditoria exportado com sucesso!", "success");
+      } catch (err) {
+        showToast("Erro ao exportar logs: " + err.message, "error");
+      }
+    });
+  }
+
+  if (btnMenuShortcuts) {
+    btnMenuShortcuts.addEventListener('click', () => {
+      closeMenu();
+      const shortcutsDialog = document.getElementById('shortcuts-dialog');
+      if (shortcutsDialog) shortcutsDialog.showModal();
+    });
+  }
+
+  if (btnMenuPwa) {
+    btnMenuPwa.addEventListener('click', () => {
+      closeMenu();
+      if (legacyInstallBtn) legacyInstallBtn.click();
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', () => {
+    if (btnMenuPwa) btnMenuPwa.style.display = 'flex';
+  });
+  window.addEventListener('appinstalled', () => {
+    if (btnMenuPwa) btnMenuPwa.style.display = 'none';
+  });
+}
+
 
 
 

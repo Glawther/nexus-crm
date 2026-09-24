@@ -223,41 +223,77 @@
         <!-- Command Palette Trigger (Ctrl + K) -->
         <button type="button" class="btn btn-outline btn-sm command-palette-trigger" id="btn-open-command-palette" title="Abrir busca rápida e comandos (Ctrl + K)">
           <kbd>Ctrl K</kbd>
-          <span>Comandos</span>
-        </button>
-
-        <!-- PWA Install Button (Appears when installable) -->
-        <button type="button" class="btn btn-outline btn-sm pwa-install-btn" id="btn-install-pwa" style="display: none;" title="Instalar Nexus CRM no Computador ou Celular">
-          📲 <span>Instalar App</span>
-        </button>
-
-        <!-- Keyboard Shortcuts Help (?) -->
-        <button type="button" class="btn-icon-subtle" id="btn-open-shortcuts" title="Atalhos do Teclado (?)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </button>
-
-        <!-- Import Leads Button -->
-        <button type="button" class="btn btn-outline btn-sm" id="btn-open-import-modal" title="Importar contatos de planilha Excel ou CSV">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span>Importar Leads</span>
-        </button>
-
-        <!-- Export CSV Button -->
-        <button type="button" class="btn btn-outline btn-sm" id="btn-export-csv" title="Exportar dados para planilha Excel / CSV">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Exportar CSV</span>
+          <span>Buscar</span>
         </button>
 
         <!-- Firebase / Google Cloud Connection Status Badge -->
         <button type="button" class="connection-pill local" id="connection-status-pill" title="Configurar conexão com o Google Cloud Firestore">
           <span class="pulse-dot"></span>
-          <span>Modo Local / Demo</span>
+          <span>Google Cloud</span>
         </button>
+
+        <!-- Unified Tools & Actions Dropdown (Despoluição da Barra) -->
+        <div class="dropdown-wrapper" id="header-tools-dropdown-wrapper">
+          <button type="button" class="header-tools-btn" id="btn-header-tools" title="Menu de Ferramentas e Exportação">
+            <span>⚡ Ferramentas</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          
+          <div class="dropdown-menu" id="header-tools-menu" style="display: none;">
+            <button type="button" class="dropdown-item" id="btn-menu-import">
+              <span class="dropdown-item-icon">📥</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Importar Leads</span>
+                <span class="dropdown-item-desc">Planilha Excel ou arquivo CSV</span>
+              </div>
+            </button>
+            
+            <button type="button" class="dropdown-item" id="btn-menu-export-csv">
+              <span class="dropdown-item-icon">📊</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Exportar Clientes</span>
+                <span class="dropdown-item-desc">Planilha formatada para Excel (CSV)</span>
+              </div>
+            </button>
+            
+            <button type="button" class="dropdown-item" id="btn-menu-export-audit">
+              <span class="dropdown-item-icon">🛡️</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Exportar Auditoria (CID)</span>
+                <span class="dropdown-item-desc">Relatório de integridade e logs</span>
+              </div>
+            </button>
+
+            <div class="dropdown-divider"></div>
+            
+            <button type="button" class="dropdown-item" id="btn-menu-shortcuts">
+              <span class="dropdown-item-icon">⌨️</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Atalhos de Teclado</span>
+                <span class="dropdown-item-desc">Guia rápido de produtividade (?)</span>
+              </div>
+            </button>
+            
+            <button type="button" class="dropdown-item" id="btn-menu-pwa" style="display: none;">
+              <span class="dropdown-item-icon">📲</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Instalar Aplicativo</span>
+                <span class="dropdown-item-desc">Usar Nexus CRM como App no PC ou Celular</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hidden legacy triggers kept for direct keyboard shortcuts and store compatibility -->
+        <button type="button" id="btn-open-import-modal" style="display: none;"></button>
+        <button type="button" id="btn-export-csv" style="display: none;"></button>
+        <button type="button" id="btn-open-shortcuts" style="display: none;"></button>
+        <button type="button" id="btn-install-pwa" style="display: none;"></button>
 
         <!-- Google User Profile / Login -->
         <div id="auth-status-container"></div>
 
-        <!-- New Lead Action Button -->
+        <!-- New Lead Action Button (Primary CTA) -->
         <button type="button" class="btn btn-primary" id="btn-new-lead">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span>Nova Oportunidade</span>
