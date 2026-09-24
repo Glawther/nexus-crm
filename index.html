@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nexus CRM - Gestão Inteligente com Google Cloud Firestore</title>
   <meta name="description" content="CRM moderno de alto desempenho com sincronização em tempo real via Google Cloud Firestore. Pipeline Kanban, métricas e gestão de clientes.">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nexus CRM">
+
+  <!-- Favicon & PWA App Icons -->
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="apple-touch-icon" href="assets/icon.svg">
+  <link rel="manifest" href="manifest.json">
   
   <!-- Modern Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -211,6 +220,22 @@
       </div>
 
       <div class="header-actions">
+        <!-- Command Palette Trigger (Ctrl + K) -->
+        <button type="button" class="btn btn-outline btn-sm command-palette-trigger" id="btn-open-command-palette" title="Abrir busca rápida e comandos (Ctrl + K)">
+          <kbd>Ctrl K</kbd>
+          <span>Comandos</span>
+        </button>
+
+        <!-- PWA Install Button (Appears when installable) -->
+        <button type="button" class="btn btn-outline btn-sm pwa-install-btn" id="btn-install-pwa" style="display: none;" title="Instalar Nexus CRM no Computador ou Celular">
+          📲 <span>Instalar App</span>
+        </button>
+
+        <!-- Keyboard Shortcuts Help (?) -->
+        <button type="button" class="btn-icon-subtle" id="btn-open-shortcuts" title="Atalhos do Teclado (?)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </button>
+
         <!-- Import Leads Button -->
         <button type="button" class="btn btn-outline btn-sm" id="btn-open-import-modal" title="Importar contatos de planilha Excel ou CSV">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1072,6 +1097,95 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
     <div class="dialog-footer">
       <button type="button" class="btn btn-outline" id="btn-cancel-import">Cancelar</button>
       <button type="button" class="btn btn-primary" id="btn-confirm-import" disabled>Confirmar e Inserir no Pipeline</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================
+       MODAL 7: Command Palette (Spotlight / Raycast-style Ctrl+K Launcher)
+       ======================================================================== -->
+  <dialog id="command-palette-dialog" class="command-palette-dialog">
+    <div class="command-palette-box">
+      <div class="command-palette-header">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="command-palette-input" class="command-palette-input" placeholder="Digite um comando, cliente ou navegação..." autocomplete="off">
+        <span class="command-palette-badge">ESC para fechar</span>
+      </div>
+      <div class="command-palette-body" id="command-palette-body">
+        <!-- Results or Default Actions generated dynamically -->
+      </div>
+      <div class="command-palette-footer">
+        <div>Navegar com <kbd>↑</kbd> <kbd>↓</kbd></div>
+        <div>Executar com <kbd>Enter</kbd></div>
+        <div>Fechar com <kbd>Esc</kbd></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================
+       MODAL 8: Guia de Atalhos de Teclado (?)
+       ======================================================================== -->
+  <dialog id="shortcuts-dialog" class="crm-dialog" style="max-width: 520px; width: 90%;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.25rem;">⌨️</span>
+        <h2 class="dialog-title">Atalhos de Teclado</h2>
+      </div>
+      <button type="button" class="action-btn" id="btn-close-shortcuts-dialog" aria-label="Fechar atalhos">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="dialog-body">
+      <div class="shortcuts-grid">
+        <div>
+          <div class="shortcuts-column-title">Navegação</div>
+          <div class="shortcut-row">
+            <span>Funil de Vendas</span>
+            <kbd class="kbd-badge">1</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Clientes &amp; Leads</span>
+            <kbd class="kbd-badge">2</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Tarefas &amp; Follow-up</span>
+            <kbd class="kbd-badge">3</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Métricas &amp; Metas</span>
+            <kbd class="kbd-badge">4</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Tríade CID (RBAC)</span>
+            <kbd class="kbd-badge">5</kbd>
+          </div>
+        </div>
+        <div>
+          <div class="shortcuts-column-title">Ações Rápidas</div>
+          <div class="shortcut-row">
+            <span>Busca / Comandos</span>
+            <kbd class="kbd-badge">Ctrl K</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Nova Oportunidade</span>
+            <kbd class="kbd-badge">N</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Importar Leads</span>
+            <kbd class="kbd-badge">I</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Atalhos de Ajuda</span>
+            <kbd class="kbd-badge">?</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span>Fechar Janela</span>
+            <kbd class="kbd-badge">Esc</kbd>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-primary" id="btn-close-shortcuts-footer">Entendido</button>
     </div>
   </dialog>
 

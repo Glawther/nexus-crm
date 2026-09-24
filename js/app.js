@@ -41,7 +41,11 @@ import {
   registerUser,
   logoutToPortal
 } from './auth-service.js';
-import { exportCustomersToCSV } from './export-service.js';
+import { 
+  exportCustomersToCSV, 
+  exportAuditLogsToCSV, 
+  exportBackupToJSON 
+} from './export-service.js';
 
 let draggedCustomerId = null;
 let activeWhatsAppCustomerId = null;
@@ -66,6 +70,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupProposalModalEvents();
   setupImportModalEvents();
   setupAuthPortalEvents();
+  setupCommandPalette();
+  setupKeyboardShortcuts();
+  setupPWA();
 
   // Setup Auth state
   onAuthChange((user) => {
@@ -524,6 +531,23 @@ function setupTasksEvents() {
 }
 
 // ==========================================================================
+// Security & Input Sanitization Engine (Tríade CID: Integridade)
+// ==========================================================================
+function sanitizeInput(val) {
+  if (val === null || val === undefined) return '';
+  return String(val)
+    .replace(/[<>]/g, '') // Strip angle brackets to eliminate stored HTML/XSS injection at ingress
+    .trim();
+}
+
+function parseSafeDealValue(val) {
+  if (!val) return 0;
+  const cleaned = String(val).replace(/[^\d.,]/g, '').replace(',', '.');
+  const num = parseFloat(cleaned);
+  return isNaN(num) || num < 0 ? 0 : Math.min(num, 1000000000);
+}
+
+// ==========================================================================
 // Customer Dialog (Add / Edit)
 // ==========================================================================
 function setupDialogEvents() {
@@ -558,18 +582,18 @@ function setupDialogEvents() {
     customerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = document.getElementById('dialog-customer-id').value;
-      const name = document.getElementById('input-customer-name').value.trim();
-      const company = document.getElementById('input-customer-company').value.trim();
-      const role = document.getElementById('input-customer-role').value.trim();
-      const email = document.getElementById('input-customer-email').value.trim();
-      const phone = document.getElementById('input-customer-phone').value.trim();
-      const dealValue = parseFloat(document.getElementById('input-deal-value').value) || 0;
+      const name = sanitizeInput(document.getElementById('input-customer-name').value);
+      const company = sanitizeInput(document.getElementById('input-customer-company').value);
+      const role = sanitizeInput(document.getElementById('input-customer-role').value);
+      const email = sanitizeInput(document.getElementById('input-customer-email').value);
+      const phone = sanitizeInput(document.getElementById('input-customer-phone').value);
+      const dealValue = parseSafeDealValue(document.getElementById('input-deal-value').value);
       const stage = document.getElementById('input-deal-stage').value;
       const priority = document.getElementById('input-deal-priority').value;
       const expectedCloseDate = document.getElementById('input-deal-forecast').value;
       const rawTags = document.getElementById('input-customer-tags').value;
-      const tags = rawTags.split(',').map(t => t.trim()).filter(Boolean);
-      const notes = document.getElementById('input-customer-notes').value.trim();
+      const tags = rawTags.split(',').map(t => sanitizeInput(t)).filter(Boolean);
+      const notes = sanitizeInput(document.getElementById('input-customer-notes').value);
 
       // Consultor atribuído (RBAC / CID)
       const assignedSelect = document.getElementById('input-customer-assigned');
@@ -1265,6 +1289,415 @@ function setupAuthPortalEvents() {
       }
     });
   }
+}
+
+// ==========================================================================
+// Command Palette Engine (Spotlight / Raycast-style Ctrl+K Launcher)
+// ==========================================================================
+function setupCommandPalette() {
+  const dialog = document.getElementById('command-palette-dialog');
+  const input = document.getElementById('command-palette-input');
+  const body = document.getElementById('command-palette-body');
+  const btnTrigger = document.getElementById('btn-open-command-palette');
+
+  if (!dialog || !input || !body) return;
+
+  window.openCommandPalette = function() {
+    dialog.showModal();
+    input.value = '';
+    renderPaletteItems('');
+    setTimeout(() => input.focus(), 50);
+  };
+
+  window.closeCommandPalette = function() {
+    dialog.close();
+  };
+
+  if (btnTrigger) {
+    btnTrigger.addEventListener('click', window.openCommandPalette);
+  }
+
+  // Click outside backdrop to close
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) {
+      window.closeCommandPalette();
+    }
+  });
+
+  input.addEventListener('input', (e) => {
+    renderPaletteItems(e.target.value);
+  });
+
+  // Keyboard navigation inside the palette (ArrowUp, ArrowDown, Enter)
+  input.addEventListener('keydown', (e) => {
+    const items = body.querySelectorAll('.command-item');
+    if (items.length === 0) return;
+
+    let activeIndex = Array.from(items).findIndex(el => el.classList.contains('active'));
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (activeIndex >= 0) items[activeIndex].classList.remove('active');
+      activeIndex = (activeIndex + 1) % items.length;
+      items[activeIndex].classList.add('active');
+      items[activeIndex].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (activeIndex >= 0) items[activeIndex].classList.remove('active');
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      items[activeIndex].classList.add('active');
+      items[activeIndex].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const targetItem = activeIndex >= 0 ? items[activeIndex] : items[0];
+      if (targetItem) targetItem.click();
+    }
+  });
+
+  function renderPaletteItems(query) {
+    const q = (query || '').toLowerCase().trim();
+    const state = crmStore.getState();
+    const customers = state.allCustomers || [];
+
+    const defaultActions = [
+      {
+        id: 'action-new-lead',
+        icon: '➕',
+        title: 'Nova Oportunidade / Lead',
+        hint: 'Atalho: N',
+        category: 'Ações Rápidas',
+        run: () => {
+          window.closeCommandPalette();
+          document.getElementById('btn-new-lead')?.click();
+        }
+      },
+      {
+        id: 'action-import-csv',
+        icon: '📥',
+        title: 'Importar Leads (CSV / Excel)',
+        hint: 'Atalho: I',
+        category: 'Ações Rápidas',
+        run: () => {
+          window.closeCommandPalette();
+          document.getElementById('btn-open-import-modal')?.click();
+        }
+      },
+      {
+        id: 'action-export-csv',
+        icon: '📊',
+        title: 'Exportar Base de Clientes (Excel CSV)',
+        hint: 'Download UTF-8',
+        category: 'Ações Rápidas',
+        run: () => {
+          window.closeCommandPalette();
+          document.getElementById('btn-export-csv')?.click();
+        }
+      },
+      {
+        id: 'action-export-audit',
+        icon: '🛡️',
+        title: 'Exportar Relatório de Auditoria (Tríade CID)',
+        hint: 'Logs imutáveis',
+        category: 'Ações Rápidas',
+        run: () => {
+          window.closeCommandPalette();
+          try {
+            exportAuditLogsToCSV(state.auditLogs);
+            showToast("Relatório de auditoria exportado com sucesso!", "success");
+          } catch (err) {
+            showToast("Erro ao exportar logs: " + err.message, "error");
+          }
+        }
+      },
+      {
+        id: 'action-toggle-role',
+        icon: '🔄',
+        title: 'Alternar Papel (Administrador / Funcionário)',
+        hint: 'RBAC',
+        category: 'Ações Rápidas',
+        run: () => {
+          window.closeCommandPalette();
+          window.handleToggleRole();
+        }
+      },
+      {
+        id: 'action-shortcuts',
+        icon: '⌨️',
+        title: 'Guia de Atalhos do Teclado',
+        hint: 'Atalho: ?',
+        category: 'Ações Rápidas',
+        run: () => {
+          window.closeCommandPalette();
+          document.getElementById('shortcuts-dialog')?.showModal();
+        }
+      },
+      {
+        id: 'nav-pipeline',
+        icon: '📌',
+        title: 'Ir para Funil de Vendas (Kanban)',
+        hint: 'Atalho: 1',
+        category: 'Navegação',
+        run: () => {
+          window.closeCommandPalette();
+          window.location.hash = 'pipeline';
+        }
+      },
+      {
+        id: 'nav-customers',
+        icon: '👥',
+        title: 'Ir para Clientes & Leads',
+        hint: 'Atalho: 2',
+        category: 'Navegação',
+        run: () => {
+          window.closeCommandPalette();
+          window.location.hash = 'customers';
+        }
+      },
+      {
+        id: 'nav-tasks',
+        icon: '📅',
+        title: 'Ir para Tarefas & Follow-up',
+        hint: 'Atalho: 3',
+        category: 'Navegação',
+        run: () => {
+          window.closeCommandPalette();
+          window.location.hash = 'tasks';
+        }
+      },
+      {
+        id: 'nav-metrics',
+        icon: '📈',
+        title: 'Ir para Métricas, Metas Q4 e Comissões',
+        hint: 'Atalho: 4',
+        category: 'Navegação',
+        run: () => {
+          window.closeCommandPalette();
+          window.location.hash = 'metrics';
+        }
+      },
+      {
+        id: 'nav-security',
+        icon: '🔒',
+        title: 'Ir para Tríade CID & Governança',
+        hint: 'Atalho: 5',
+        category: 'Navegação',
+        run: () => {
+          window.closeCommandPalette();
+          window.location.hash = 'security';
+        }
+      }
+    ];
+
+    let html = '';
+
+    if (!q) {
+      const categories = ['Ações Rápidas', 'Navegação'];
+      categories.forEach(cat => {
+        const items = defaultActions.filter(a => a.category === cat);
+        html += `<div class="command-group-title">${cat}</div>`;
+        items.forEach((item, idx) => {
+          const isFirst = cat === 'Ações Rápidas' && idx === 0;
+          html += `
+            <div class="command-item ${isFirst ? 'active' : ''}" data-action-id="${item.id}">
+              <div class="command-item-left">
+                <span class="command-item-icon">${item.icon}</span>
+                <span>${escapeHtml(item.title)}</span>
+              </div>
+              <span class="command-item-hint">${escapeHtml(item.hint)}</span>
+            </div>
+          `;
+        });
+      });
+    } else {
+      const matchedActions = defaultActions.filter(a => 
+        a.title.toLowerCase().includes(q) || 
+        a.hint.toLowerCase().includes(q)
+      );
+
+      const matchedCustomers = customers.filter(c => 
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.company || '').toLowerCase().includes(q) ||
+        (c.email || '').toLowerCase().includes(q) ||
+        (c.phone || '').includes(q) ||
+        (c.tags || []).some(t => t.toLowerCase().includes(q))
+      ).slice(0, 8);
+
+      if (matchedActions.length > 0) {
+        html += `<div class="command-group-title">Ações do Sistema</div>`;
+        matchedActions.forEach((item, idx) => {
+          html += `
+            <div class="command-item ${idx === 0 ? 'active' : ''}" data-action-id="${item.id}">
+              <div class="command-item-left">
+                <span class="command-item-icon">${item.icon}</span>
+                <span>${escapeHtml(item.title)}</span>
+              </div>
+              <span class="command-item-hint">${escapeHtml(item.hint)}</span>
+            </div>
+          `;
+        });
+      }
+
+      if (matchedCustomers.length > 0) {
+        html += `<div class="command-group-title">Oportunidades &amp; Clientes (${matchedCustomers.length})</div>`;
+        matchedCustomers.forEach((c, idx) => {
+          const isAct = matchedActions.length === 0 && idx === 0;
+          html += `
+            <div class="command-item ${isAct ? 'active' : ''}" data-customer-id="${c.id}">
+              <div class="command-item-left">
+                <span class="command-item-icon">🏢</span>
+                <div>
+                  <div style="font-weight: 600; font-size: 0.82rem;">${escapeHtml(c.name)}</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(c.company || 'Sem empresa')} • ${formatBRL(c.dealValue)}</div>
+                </div>
+              </div>
+              <span class="command-item-hint">Ver Detalhes ↵</span>
+            </div>
+          `;
+        });
+      }
+
+      if (matchedActions.length === 0 && matchedCustomers.length === 0) {
+        html = `
+          <div style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            Nenhum resultado encontrado para "<strong>${escapeHtml(q)}</strong>".
+          </div>
+        `;
+      }
+    }
+
+    body.innerHTML = html;
+
+    body.querySelectorAll('.command-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const actionId = item.getAttribute('data-action-id');
+        const customerId = item.getAttribute('data-customer-id');
+
+        if (actionId) {
+          const action = defaultActions.find(a => a.id === actionId);
+          if (action) action.run();
+        } else if (customerId) {
+          window.closeCommandPalette();
+          window.handleOpenLeadDetails(customerId);
+        }
+      });
+    });
+  }
+}
+
+// ==========================================================================
+// Keyboard Shortcuts Engine (?)
+// ==========================================================================
+function setupKeyboardShortcuts() {
+  const shortcutsDialog = document.getElementById('shortcuts-dialog');
+  const btnOpenShortcuts = document.getElementById('btn-open-shortcuts');
+  const btnCloseShortcuts = document.getElementById('btn-close-shortcuts-dialog');
+  const btnCloseShortcutsFooter = document.getElementById('btn-close-shortcuts-footer');
+
+  if (btnOpenShortcuts && shortcutsDialog) {
+    btnOpenShortcuts.addEventListener('click', () => shortcutsDialog.showModal());
+  }
+  if (btnCloseShortcuts && shortcutsDialog) {
+    btnCloseShortcuts.addEventListener('click', () => shortcutsDialog.close());
+  }
+  if (btnCloseShortcutsFooter && shortcutsDialog) {
+    btnCloseShortcutsFooter.addEventListener('click', () => shortcutsDialog.close());
+  }
+
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+K or Cmd+K: Open Command Palette
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      if (window.openCommandPalette) window.openCommandPalette();
+      return;
+    }
+
+    // Do not trigger single-key shortcuts while typing in inputs
+    const activeEl = document.activeElement;
+    const isTyping = activeEl && (
+      activeEl.tagName === 'INPUT' ||
+      activeEl.tagName === 'TEXTAREA' ||
+      activeEl.tagName === 'SELECT' ||
+      activeEl.isContentEditable
+    );
+
+    if (isTyping) {
+      if (e.key === 'Escape') activeEl.blur();
+      return;
+    }
+
+    // Global Single-Key Shortcuts
+    if (e.key === '?') {
+      e.preventDefault();
+      if (shortcutsDialog) shortcutsDialog.showModal();
+    } else if (e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      const customerDialog = document.getElementById('customer-dialog');
+      if (customerDialog) {
+        document.getElementById('customer-form')?.reset();
+        document.getElementById('dialog-customer-id').value = '';
+        document.getElementById('customer-dialog-title').textContent = 'Nova Oportunidade / Lead';
+        customerDialog.showModal();
+      }
+    } else if (e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      const importDialog = document.getElementById('import-dialog');
+      if (importDialog) importDialog.showModal();
+    } else if (e.key === '1') {
+      window.location.hash = 'pipeline';
+    } else if (e.key === '2') {
+      window.location.hash = 'customers';
+    } else if (e.key === '3') {
+      window.location.hash = 'tasks';
+    } else if (e.key === '4') {
+      window.location.hash = 'metrics';
+    } else if (e.key === '5') {
+      window.location.hash = 'security';
+    }
+  });
+}
+
+// ==========================================================================
+// Progressive Web App (PWA) & Service Worker Registration
+// ==========================================================================
+function setupPWA() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        console.log('[Nexus PWA] Service Worker registrado com sucesso no escopo:', reg.scope);
+      }).catch((err) => {
+        console.warn('[Nexus PWA] Falha ao registrar Service Worker:', err);
+      });
+    });
+  }
+
+  let deferredPrompt = null;
+  const btnInstall = document.getElementById('btn-install-pwa');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (btnInstall) {
+      btnInstall.style.display = 'inline-flex';
+    }
+  });
+
+  if (btnInstall) {
+    btnInstall.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showToast("Nexus CRM instalado com sucesso no seu sistema!", "success");
+      }
+      deferredPrompt = null;
+      btnInstall.style.display = 'none';
+    });
+  }
+
+  window.addEventListener('appinstalled', () => {
+    if (btnInstall) btnInstall.style.display = 'none';
+    showToast("Nexus CRM configurado como aplicativo nativo!", "success");
+  });
 }
 
 

@@ -1713,6 +1713,290 @@
   line-height: 1.5;
 }
 
+/* ==========================================================================
+   Command Palette (Spotlight / Raycast-style Ctrl+K Launcher)
+   ========================================================================== */
+.command-palette-dialog {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: 620px;
+  width: 90vw;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.command-palette-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 0.15s ease-out forwards;
+}
+
+.command-palette-box {
+  background: #ffffff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.command-palette-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: #ffffff;
+}
+
+.command-palette-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.command-palette-input::placeholder {
+  color: #94a3b8;
+}
+
+.command-palette-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.command-palette-body {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.command-group-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  padding: 0.5rem 0.75rem 0.25rem 0.75rem;
+}
+
+.command-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.command-item:hover,
+.command-item.active {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.command-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.command-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.command-item.active .command-item-icon {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.command-item-hint {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.command-item.active .command-item-hint {
+  color: #3b82f6;
+}
+
+.command-palette-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.25rem;
+  background: #f8fafc;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.command-palette-footer kbd {
+  font-family: inherit;
+  font-size: 0.68rem;
+  padding: 2px 5px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: #334155;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Header Command Palette & Shortcuts Buttons
+   ========================================================================== */
+.command-palette-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  font-size: 0.78rem;
+  padding: 5px 10px;
+}
+
+.command-palette-trigger kbd {
+  background: #ffffff;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.btn-icon-subtle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: #ffffff;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-subtle:hover {
+  background: #f1f5f9;
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.pwa-install-btn {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+  font-weight: 600;
+  font-size: 0.78rem;
+  animation: pulseGentle 3s infinite;
+}
+
+@keyframes pulseGentle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* ==========================================================================
+   Keyboard Shortcuts Modal
+   ========================================================================== */
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.shortcuts-column-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.65rem;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+.kbd-badge {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #334155;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+}
+
+/* ==========================================================================
+   Rich Empty States
+   ========================================================================== */
+.empty-state-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.empty-state-icon {
+  font-size: 2.25rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.85;
+}
+
+.empty-state-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.empty-state-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 300px;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+}
+
+
 
 
 

@@ -1,0 +1,43 @@
+{
+  "name": "Nexus CRM Enterprise",
+  "short_name": "Nexus CRM",
+  "description": "Plataforma Inteligente de Gestão Comercial & Pipeline de Vendas em Tempo Real",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Funil Kanban",
+      "short_name": "Funil",
+      "description": "Visualizar pipeline de oportunidades",
+      "url": "/#pipeline",
+      "icons": [{ "src": "assets/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Clientes & Leads",
+      "short_name": "Clientes",
+      "description": "Ver lista consolidada de clientes",
+      "url": "/#customers",
+      "icons": [{ "src": "assets/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Métricas & Metas",
+      "short_name": "Métricas",
+      "description": "Acompanhar faturamento e comissões",
+      "url": "/#metrics",
+      "icons": [{ "src": "assets/icon.svg", "sizes": "any" }]
+    }
+  ]
+}
