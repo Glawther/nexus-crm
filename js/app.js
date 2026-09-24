@@ -1886,14 +1886,23 @@ function setupHeaderToolsMenu() {
   if (!btnTools || !menu) return;
 
   function toggleMenu(e) {
-    if (e) e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const isHidden = menu.style.display === 'none' || !menu.style.display;
     menu.style.display = isHidden ? 'block' : 'none';
     btnTools.classList.toggle('active', isHidden);
+    if (isHidden) {
+      menu.classList.add('open');
+    } else {
+      menu.classList.remove('open');
+    }
   }
 
   function closeMenu() {
     menu.style.display = 'none';
+    menu.classList.remove('open');
     btnTools.classList.remove('active');
   }
 
@@ -1917,7 +1926,7 @@ function setupHeaderToolsMenu() {
   }
 
   document.addEventListener('click', (e) => {
-    if (!menu.contains(e.target) && e.target !== btnTools) {
+    if (!menu.contains(e.target) && !btnTools.contains(e.target)) {
       closeMenu();
     }
   });
