@@ -3,18 +3,18 @@
  */
 
 export const STAGES = [
-  { id: 'lead', name: 'Novo Lead', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' },
-  { id: 'contact', name: 'Primeiro Contato', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
-  { id: 'proposal', name: 'Proposta Enviada', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
-  { id: 'negotiation', name: 'Em Negociação', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)' },
-  { id: 'won', name: 'Fechado Ganho', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
-  { id: 'lost', name: 'Perdido', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' }
+  { id: 'lead', name: 'Novo Lead', color: '#0284c7', bg: '#f0f9ff' },
+  { id: 'contact', name: 'Primeiro Contato', color: '#2563eb', bg: '#eff6ff' },
+  { id: 'proposal', name: 'Proposta Enviada', color: '#d97706', bg: '#fffbeb' },
+  { id: 'negotiation', name: 'Em Negociação', color: '#7c3aed', bg: '#f5f3ff' },
+  { id: 'won', name: 'Fechado Ganho', color: '#16a34a', bg: '#f0fdf4' },
+  { id: 'lost', name: 'Perdido', color: '#dc2626', bg: '#fef2f2' }
 ];
 
 export const PRIORITIES = [
-  { id: 'high', label: 'Alta Prioridade', color: '#f43f5e' },
-  { id: 'medium', label: 'Média Prioridade', color: '#f59e0b' },
-  { id: 'low', label: 'Baixa Prioridade', color: '#10b981' }
+  { id: 'high', label: 'Alta Prioridade', color: '#e11d48' },
+  { id: 'medium', label: 'Média Prioridade', color: '#d97706' },
+  { id: 'low', label: 'Baixa Prioridade', color: '#16a34a' }
 ];
 
 class CRMStore {

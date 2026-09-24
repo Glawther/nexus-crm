@@ -1,72 +1,79 @@
 :root {
   /* ==========================================================================
-     Color Palette (HSL Tailored)
+     Sober & Modern Corporate Executive Palette (Pure White Theme)
      ========================================================================== */
-  /* Neutrals & Surfaces */
-  --bg-deep: #07090e;
-  --bg-primary: #0b0f19;
-  --bg-surface: #111827;
-  --bg-surface-elevated: #1a2234;
-  --bg-surface-glass: rgba(17, 24, 39, 0.72);
-  --bg-surface-glass-border: rgba(255, 255, 255, 0.08);
-  --bg-surface-glass-hover: rgba(255, 255, 255, 0.04);
+  /* Surfaces & Backgrounds */
+  --bg-deep: #ffffff;
+  --bg-primary: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f8fafc;
+  --bg-surface-glass: #ffffff;
+  --bg-surface-glass-border: #e2e8f0;
+  --bg-surface-glass-hover: #f1f5f9;
   
   /* Text & Foreground */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
 
-  /* Brand Accents */
-  --accent-primary: #6366f1;
-  --accent-primary-hover: #4f46e5;
-  --accent-secondary: #a855f7;
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
-  --accent-gradient-glow: 0 0 24px rgba(99, 102, 241, 0.35);
+  /* Brand Accents (Sober Navy & Royal Slate) */
+  --accent-primary: #0f172a;
+  --accent-primary-hover: #1e293b;
+  --accent-secondary: #2563eb;
+  --accent-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+  --accent-gradient-glow: 0 1px 3px rgba(15, 23, 42, 0.12);
 
-  /* Status Colors */
-  --color-lead: #06b6d4;
-  --color-lead-bg: rgba(6, 182, 212, 0.12);
+  /* Status Colors (Refined Soft Badges) */
+  --color-lead: #0284c7;
+  --color-lead-bg: #f0f9ff;
+  --color-lead-border: #bae6fd;
   
-  --color-contact: #3b82f6;
-  --color-contact-bg: rgba(59, 130, 246, 0.12);
+  --color-contact: #2563eb;
+  --color-contact-bg: #eff6ff;
+  --color-contact-border: #bfdbfe;
 
-  --color-proposal: #f59e0b;
-  --color-proposal-bg: rgba(245, 158, 11, 0.12);
+  --color-proposal: #d97706;
+  --color-proposal-bg: #fffbeb;
+  --color-proposal-border: #fde68a;
 
-  --color-negotiation: #8b5cf6;
-  --color-negotiation-bg: rgba(139, 92, 246, 0.12);
+  --color-negotiation: #7c3aed;
+  --color-negotiation-bg: #f5f3ff;
+  --color-negotiation-border: #ddd6fe;
 
-  --color-won: #10b981;
-  --color-won-bg: rgba(16, 185, 129, 0.12);
+  --color-won: #16a34a;
+  --color-won-bg: #f0fdf4;
+  --color-won-border: #bbf7d0;
 
-  --color-lost: #ef4444;
-  --color-lost-bg: rgba(239, 68, 68, 0.12);
+  --color-lost: #dc2626;
+  --color-lost-bg: #fef2f2;
+  --color-lost-border: #fecaca;
 
   /* Priorities */
-  --priority-high: #f43f5e;
-  --priority-medium: #f59e0b;
-  --priority-low: #10b981;
+  --priority-high: #e11d48;
+  --priority-medium: #d97706;
+  --priority-low: #16a34a;
 
   /* Borders & Dividers */
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-focus: rgba(99, 102, 241, 0.6);
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --border-focus: #2563eb;
 
   /* Typography */
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   
-  /* Shadows & Elevation */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 12px 30px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+  /* Shadows & Elevation (Clean & Soft Corporate) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 
   /* Radii */
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
   /* Transitions */
@@ -75,6 +82,6 @@
   --transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Layout Spacing */
-  --sidebar-width: 260px;
-  --header-height: 70px;
+  --sidebar-width: 250px;
+  --header-height: 64px;
 }
