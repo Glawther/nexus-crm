@@ -1184,7 +1184,7 @@ function setupAuthPortalEvents() {
 
   window.hideAuthPortal = function() {
     if (portalScreen) portalScreen.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'flex';
+    if (appContainer) appContainer.style.display = '';
   };
 
   window.handleLogoutToPortal = function() {

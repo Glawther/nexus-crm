@@ -207,37 +207,42 @@
     </aside>
 
     <!-- ======================================================================
-         Header Bar
+         Main Application Wrapper (Header + Content Area)
          ====================================================================== -->
-    <header class="header">
-      <div class="header-left">
-        <h1 class="page-title" id="current-page-title">Pipeline de Vendas</h1>
-        
-        <div class="search-box">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="global-search-input" placeholder="Buscar por cliente, empresa ou tag..." autocomplete="off">
+    <div class="main-wrapper" id="main-wrapper">
+
+      <!-- ======================================================================
+           Header Bar
+           ====================================================================== -->
+      <header class="header">
+        <div class="header-left">
+          <h1 class="page-title" id="current-page-title">Pipeline de Vendas</h1>
+          
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="global-search-input" placeholder="Buscar por cliente, empresa ou tag..." autocomplete="off">
+          </div>
         </div>
-      </div>
 
-      <div class="header-actions">
-        <!-- Command Palette Trigger (Ctrl + K) -->
-        <button type="button" class="btn btn-outline btn-sm command-palette-trigger" id="btn-open-command-palette" title="Abrir busca rápida e comandos (Ctrl + K)">
-          <kbd>Ctrl K</kbd>
-          <span>Buscar</span>
-        </button>
-
-        <!-- Firebase / Google Cloud Connection Status Badge -->
-        <button type="button" class="connection-pill local" id="connection-status-pill" title="Configurar conexão com o Google Cloud Firestore">
-          <span class="pulse-dot"></span>
-          <span>Google Cloud</span>
-        </button>
-
-        <!-- Unified Tools & Actions Dropdown (Despoluição da Barra) -->
-        <div class="dropdown-wrapper" id="header-tools-dropdown-wrapper">
-          <button type="button" class="header-tools-btn" id="btn-header-tools" title="Menu de Ferramentas e Exportação">
-            <span>⚡ Ferramentas</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        <div class="header-actions">
+          <!-- Command Palette Trigger (Ctrl + K) -->
+          <button type="button" class="btn btn-outline btn-sm command-palette-trigger" id="btn-open-command-palette" title="Abrir busca rápida e comandos (Ctrl + K)">
+            <kbd>Ctrl K</kbd>
+            <span>Buscar</span>
           </button>
+
+          <!-- Firebase / Google Cloud Connection Status Badge -->
+          <button type="button" class="connection-pill local" id="connection-status-pill" title="Configurar conexão com o Google Cloud Firestore">
+            <span class="pulse-dot"></span>
+            <span>Google Cloud</span>
+          </button>
+
+          <!-- Unified Tools & Actions Dropdown (Despoluição da Barra) -->
+          <div class="dropdown-wrapper" id="header-tools-dropdown-wrapper">
+            <button type="button" class="btn btn-outline btn-sm header-tools-btn" id="btn-header-tools" title="Menu de Ferramentas e Exportação">
+              <span>⚡ Ferramentas</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
           
           <div class="dropdown-menu" id="header-tools-menu" style="display: none;">
             <button type="button" class="dropdown-item" id="btn-menu-import">
@@ -560,7 +565,9 @@
 
     </main>
 
-  </div>
+    </div> <!-- /#main-wrapper -->
+
+  </div> <!-- /#app-container -->
 
   <!-- ========================================================================
        MODAL 1: Customer Form Dialog (Add / Edit)

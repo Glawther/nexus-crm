@@ -2005,18 +2005,24 @@
 }
 
 .header-tools-btn {
+  appearance: none;
+  -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 6px 12px;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
   background: #ffffff;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  font-size: 0.8rem;
+  font-family: inherit;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  outline: none;
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  line-height: 1;
 }
 
 .header-tools-btn:hover,

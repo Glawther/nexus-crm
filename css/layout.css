@@ -21,16 +21,13 @@ html, body {
 }
 
 /* ==========================================================================
-   Main App Layout Grid
+   Main App Layout
    ========================================================================== */
 .app-container {
-  display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
-  grid-template-rows: var(--header-height) 1fr;
-  grid-template-areas:
-    "sidebar header"
-    "sidebar content";
+  display: flex;
+  flex-direction: row;
   min-height: 100vh;
+  width: 100%;
   position: relative;
   background-color: var(--bg-deep);
 }
@@ -39,7 +36,9 @@ html, body {
    Sidebar Navigation
    ========================================================================== */
 .sidebar {
-  grid-area: sidebar;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  max-width: var(--sidebar-width);
   background-color: var(--bg-primary);
   border-right: 1px solid var(--border-subtle);
   display: flex;
@@ -49,6 +48,22 @@ html, body {
   top: 0;
   height: 100vh;
   z-index: 20;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Main Layout Wrapper (Header + Content Area)
+   ========================================================================== */
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background-color: var(--bg-deep);
 }
 
 .brand {
@@ -167,7 +182,8 @@ html, body {
    Header Navbar
    ========================================================================== */
 .header {
-  grid-area: header;
+  width: 100%;
+  min-height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -177,6 +193,7 @@ html, body {
   position: sticky;
   top: 0;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .header-left {
@@ -241,7 +258,7 @@ html, body {
    Content Area Views
    ========================================================================== */
 .content-area {
-  grid-area: content;
+  flex: 1;
   padding: 2rem;
   max-width: 1700px;
   margin: 0 auto;
@@ -261,10 +278,18 @@ html, body {
 /* ==========================================================================
    Responsive Adaptations
    ========================================================================== */
+@media (max-width: 1100px) {
+  .search-box {
+    width: 220px;
+  }
+}
+
 @media (max-width: 1024px) {
-  .app-container {
-    grid-template-columns: 80px 1fr;
-    --sidebar-width: 80px;
+  .sidebar {
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
+    padding: 1.25rem 0.5rem;
   }
 
   .brand-name, .brand-badge, .nav-item span, .nav-count, .sidebar-footer button span {
@@ -282,26 +307,37 @@ html, body {
   }
 
   .search-box {
-    width: 200px;
+    width: 180px;
   }
 }
 
 @media (max-width: 768px) {
   .app-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr;
-    grid-template-areas:
-      "header"
-      "sidebar"
-      "content";
+    flex-direction: column;
   }
 
   .sidebar {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     height: auto;
     position: relative;
     border-right: none;
     border-bottom: 1px solid var(--border-subtle);
     padding: 0.75rem 1rem;
+  }
+
+  .main-wrapper {
+    height: auto;
+    overflow: visible;
+  }
+
+  .header {
+    position: relative;
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: auto;
   }
 
   .nav-menu {
