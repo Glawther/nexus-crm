@@ -1,12 +1,22 @@
+/**
+ * Nexus CRM - Application Orchestrator
+ * Enterprise Grade CRM with AI, Cloud Firestore, WhatsApp Templates, Tasks & Timeline
+ */
+
 import { storage } from './storage-manager.js';
-import { crmStore, STAGES, PRIORITIES } from './crm-store.js';
+import { crmStore, STAGES, PRIORITIES, LOSS_REASONS } from './crm-store.js';
 import { 
   renderKPIs, 
   renderKanban, 
   renderTable, 
+  renderTasksView,
+  renderDetailedMetrics,
+  renderLeadTimeline,
   renderConnectionStatus, 
   renderAuthBadge,
-  showToast 
+  showToast,
+  WA_TEMPLATES,
+  getWhatsAppLink
 } from './ui-renderer.js';
 import { getSavedFirebaseConfig } from './config.js';
 import { analyzeDealWithGemini, getSavedGeminiKey, saveGeminiKey } from './gemini-service.js';
@@ -14,6 +24,8 @@ import { initAuth, signInWithGoogle, signOutUser, onAuthChange } from './auth-se
 import { exportCustomersToCSV } from './export-service.js';
 
 let draggedCustomerId = null;
+let activeWhatsAppCustomerId = null;
+let activeLeadDetailsCustomerId = null;
 
 // ==========================================================================
 // Initialization
@@ -25,6 +37,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupFirebaseConfigModal();
   setupGeminiModals();
   setupExportEvents();
+  setupTasksEvents();
+  setupWhatsAppModalEvents();
+  setupLossReasonEvents();
+  setupLeadDetailsEvents();
 
   // Setup Auth state
   onAuthChange((user) => {
@@ -37,8 +53,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderKPIs(state.metrics);
     renderKanban(state.filteredCustomers, state.metrics);
     renderTable(state.filteredCustomers);
+    renderTasksView(state.tasks, state.taskFilter, state.allCustomers);
+    renderDetailedMetrics(state.metrics);
     renderConnectionStatus(state.storageMode);
     updateNavCounters(state);
+
+    // If lead details modal is currently open, refresh its timeline
+    if (activeLeadDetailsCustomerId) {
+      const currentCustomer = state.allCustomers.find(c => c.id === activeLeadDetailsCustomerId);
+      if (currentCustomer) {
+        renderLeadTimeline(currentCustomer);
+      }
+    }
   });
 
   // Subscribe storage engine changes to CRM store
@@ -88,8 +114,14 @@ function setupNavigation() {
 function updateNavCounters(state) {
   const pipelineCount = document.getElementById('nav-count-pipeline');
   const customersCount = document.getElementById('nav-count-customers');
+  const tasksCount = document.getElementById('nav-count-tasks');
+
   if (pipelineCount) pipelineCount.textContent = state.allCustomers.length;
   if (customersCount) customersCount.textContent = state.allCustomers.length;
+  if (tasksCount) {
+    const pendingCount = (state.tasks || []).filter(t => !t.completed).length;
+    tasksCount.textContent = pendingCount;
+  }
 }
 
 // ==========================================================================
@@ -130,6 +162,12 @@ window.handleDropCard = async function(event, targetStage) {
   const cards = document.querySelectorAll('.lead-card');
   cards.forEach(c => c.classList.remove('dragging'));
 
+  if (targetStage === 'lost') {
+    window.handleTriggerLossReason(customerId);
+    draggedCustomerId = null;
+    return;
+  }
+
   try {
     await storage.updateStage(customerId, targetStage);
     const stageObj = STAGES.find(s => s.id === targetStage);
@@ -142,6 +180,11 @@ window.handleDropCard = async function(event, targetStage) {
 };
 
 window.handleMoveStage = async function(customerId, newStage) {
+  if (newStage === 'lost') {
+    window.handleTriggerLossReason(customerId);
+    return;
+  }
+
   try {
     await storage.updateStage(customerId, newStage);
     const stageObj = STAGES.find(s => s.id === newStage);
@@ -150,6 +193,270 @@ window.handleMoveStage = async function(customerId, newStage) {
     showToast("Erro ao mover oportunidade: " + err.message, "error");
   }
 };
+
+// ==========================================================================
+// Loss Reason Modal (Motivo de Perda)
+// ==========================================================================
+function setupLossReasonEvents() {
+  const dialog = document.getElementById('loss-reason-dialog');
+  const form = document.getElementById('loss-reason-form');
+  const btnClose = document.getElementById('btn-close-loss-dialog');
+  const btnCancel = document.getElementById('btn-cancel-loss-dialog');
+
+  const closeDialog = () => dialog && dialog.close();
+  if (btnClose) btnClose.addEventListener('click', closeDialog);
+  if (btnCancel) btnCancel.addEventListener('click', closeDialog);
+
+  window.handleTriggerLossReason = function(customerId) {
+    document.getElementById('loss-customer-id').value = customerId;
+    document.getElementById('select-loss-reason').value = 'price';
+    document.getElementById('input-loss-details').value = '';
+    dialog.showModal();
+  };
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const customerId = document.getElementById('loss-customer-id').value;
+      const reasonVal = document.getElementById('select-loss-reason').value;
+      const details = document.getElementById('input-loss-details').value.trim();
+
+      const reasonObj = LOSS_REASONS.find(r => r.id === reasonVal);
+      const reasonLabel = reasonObj ? reasonObj.label : reasonVal;
+
+      try {
+        await storage.setLossReason(customerId, reasonLabel, details);
+        dialog.close();
+        showToast("Oportunidade arquivada como perdida.", "info");
+      } catch (err) {
+        showToast("Erro ao registrar perda: " + err.message, "error");
+      }
+    });
+  }
+}
+
+// ==========================================================================
+// WhatsApp Templates Selector Modal
+// ==========================================================================
+function setupWhatsAppModalEvents() {
+  const dialog = document.getElementById('whatsapp-dialog');
+  const btnClose = document.getElementById('btn-close-wa-dialog');
+  const btnCancel = document.getElementById('btn-cancel-wa-dialog');
+  const btnSendConfirm = document.getElementById('btn-send-wa-confirm');
+  const templatesContainer = document.getElementById('wa-templates-container');
+  const messageTextarea = document.getElementById('wa-custom-message');
+
+  const closeDialog = () => dialog && dialog.close();
+  if (btnClose) btnClose.addEventListener('click', closeDialog);
+  if (btnCancel) btnCancel.addEventListener('click', closeDialog);
+
+  window.handleOpenWhatsAppModal = function(customerId) {
+    const customer = storage.getCustomer(customerId);
+    if (!customer || !customer.phone) {
+      showToast("Esta oportunidade não possui telefone cadastrado.", "error");
+      return;
+    }
+
+    activeWhatsAppCustomerId = customerId;
+    document.getElementById('wa-dialog-title').textContent = `WhatsApp para ${customer.name}`;
+    document.getElementById('wa-dialog-subtitle').textContent = `${customer.company || 'Sem empresa'} • ${customer.phone}`;
+
+    // Render templates
+    if (templatesContainer) {
+      templatesContainer.innerHTML = WA_TEMPLATES.map((tmpl, idx) => {
+        const text = tmpl.getText(customer);
+        return `
+          <div class="wa-template-card ${idx === 0 ? 'selected' : ''}" data-template-id="${tmpl.id}">
+            <div class="wa-template-title">${tmpl.title}</div>
+            <div class="wa-template-preview">${escapeHtml(text)}</div>
+          </div>
+        `;
+      }).join('');
+
+      // Set initial message
+      messageTextarea.value = WA_TEMPLATES[0].getText(customer);
+
+      // Bind click on template cards
+      const cards = templatesContainer.querySelectorAll('.wa-template-card');
+      cards.forEach(card => {
+        card.addEventListener('click', () => {
+          cards.forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          const tmplId = card.dataset.templateId;
+          const selectedTmpl = WA_TEMPLATES.find(t => t.id === tmplId);
+          if (selectedTmpl) {
+            messageTextarea.value = selectedTmpl.getText(customer);
+          }
+        });
+      });
+    }
+
+    dialog.showModal();
+  };
+
+  if (btnSendConfirm) {
+    btnSendConfirm.addEventListener('click', async () => {
+      const customer = storage.getCustomer(activeWhatsAppCustomerId);
+      if (!customer) return;
+
+      const message = messageTextarea.value.trim();
+      const link = getWhatsAppLink(customer.phone, message);
+      if (!link) {
+        showToast("Número de telefone inválido.", "error");
+        return;
+      }
+
+      // Automatically log interaction in customer timeline
+      await storage.addActivity(customer.id, {
+        type: 'whatsapp',
+        title: 'Mensagem de WhatsApp Enviada',
+        text: message
+      });
+
+      // Open WhatsApp Web
+      window.open(link, '_blank');
+      dialog.close();
+      showToast("Mensagem lançada e registrada no histórico!", "success");
+    });
+  }
+}
+
+// ==========================================================================
+// Lead Details & Activity Timeline Modal
+// ==========================================================================
+function setupLeadDetailsEvents() {
+  const dialog = document.getElementById('lead-details-dialog');
+  const btnClose = document.getElementById('btn-close-lead-details');
+  const btnCloseFooter = document.getElementById('btn-close-lead-details-footer');
+
+  const closeDialog = () => {
+    activeLeadDetailsCustomerId = null;
+    dialog && dialog.close();
+  };
+  if (btnClose) btnClose.addEventListener('click', closeDialog);
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeDialog);
+
+  window.handleOpenLeadDetails = function(customerId) {
+    const customer = storage.getCustomer(customerId);
+    if (!customer) return;
+
+    activeLeadDetailsCustomerId = customerId;
+    renderLeadTimeline(customer);
+    dialog.showModal();
+  };
+
+  // Quick activity logging buttons
+  const quickFormContainer = document.getElementById('quick-activity-form-container');
+  const quickTitle = document.getElementById('quick-activity-title');
+  const quickType = document.getElementById('quick-activity-type');
+  const quickText = document.getElementById('quick-activity-text');
+  const btnSaveQuick = document.getElementById('btn-save-quick-activity');
+  const btnCancelQuick = document.getElementById('btn-cancel-quick-activity');
+
+  const openQuickForm = (type, title) => {
+    quickType.value = type;
+    quickTitle.textContent = title;
+    quickText.value = '';
+    quickFormContainer.style.display = 'block';
+    quickText.focus();
+  };
+
+  const btnLogCall = document.getElementById('btn-quick-log-call');
+  const btnLogMeeting = document.getElementById('btn-quick-log-meeting');
+  const btnLogNote = document.getElementById('btn-quick-log-note');
+
+  if (btnLogCall) btnLogCall.addEventListener('click', () => openQuickForm('call', '📞 Registrar Ligação Telefônica'));
+  if (btnLogMeeting) btnLogMeeting.addEventListener('click', () => openQuickForm('meeting', '📅 Registrar Reunião Comercial'));
+  if (btnLogNote) btnLogNote.addEventListener('click', () => openQuickForm('note', '📝 Adicionar Nota Interna'));
+
+  if (btnCancelQuick) {
+    btnCancelQuick.addEventListener('click', () => {
+      quickFormContainer.style.display = 'none';
+    });
+  }
+
+  if (btnSaveQuick) {
+    btnSaveQuick.addEventListener('click', async () => {
+      if (!activeLeadDetailsCustomerId) return;
+      const text = quickText.value.trim();
+      if (!text) {
+        showToast("Digite o conteúdo da interação.", "error");
+        return;
+      }
+
+      const type = quickType.value;
+      const titleMap = {
+        call: 'Ligação Telefônica Realizada',
+        meeting: 'Reunião Comercial Realizada',
+        note: 'Nota Interna Adicionada'
+      };
+
+      await storage.addActivity(activeLeadDetailsCustomerId, {
+        type,
+        title: titleMap[type] || 'Interação',
+        text
+      });
+
+      quickFormContainer.style.display = 'none';
+      const updatedCustomer = storage.getCustomer(activeLeadDetailsCustomerId);
+      if (updatedCustomer) renderLeadTimeline(updatedCustomer);
+      showToast("Interação registrada com sucesso!", "success");
+    });
+  }
+}
+
+// ==========================================================================
+// Tasks Management (Activity-Based Selling)
+// ==========================================================================
+function setupTasksEvents() {
+  const taskForm = document.getElementById('new-task-form');
+  const filterPills = document.querySelectorAll('#task-filter-pills .filter-pill');
+
+  filterPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      filterPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      crmStore.setTaskFilter(pill.dataset.taskFilter);
+    });
+  });
+
+  if (taskForm) {
+    taskForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('task-input-title').value.trim();
+      const type = document.getElementById('task-input-type').value;
+      const customerId = document.getElementById('task-input-customer').value;
+      const dueDate = document.getElementById('task-input-date').value;
+
+      if (!customerId) {
+        showToast("Selecione um cliente para vincular a tarefa.", "error");
+        return;
+      }
+
+      try {
+        await storage.addTask(customerId, { title, type, dueDate });
+        taskForm.reset();
+        document.getElementById('task-input-date').value = new Date().toISOString().split('T')[0];
+        showToast("Tarefa comercial agendada com sucesso!", "success");
+      } catch (err) {
+        showToast("Erro ao agendar tarefa: " + err.message, "error");
+      }
+    });
+
+    // Default task date to today
+    const dateInput = document.getElementById('task-input-date');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+  }
+
+  window.handleToggleTask = async function(customerId, taskId) {
+    try {
+      await storage.toggleTask(customerId, taskId);
+      showToast("Status da tarefa atualizado.", "success");
+    } catch (err) {
+      showToast("Erro ao atualizar tarefa: " + err.message, "error");
+    }
+  };
+}
 
 // ==========================================================================
 // Customer Dialog (Add / Edit)
@@ -168,6 +475,7 @@ function setupDialogEvents() {
       customerForm.reset();
       document.getElementById('input-deal-stage').value = 'lead';
       document.getElementById('input-deal-priority').value = 'medium';
+      document.getElementById('input-deal-forecast').value = '';
       customerDialog.showModal();
     });
   }
@@ -188,6 +496,7 @@ function setupDialogEvents() {
       const dealValue = parseFloat(document.getElementById('input-deal-value').value) || 0;
       const stage = document.getElementById('input-deal-stage').value;
       const priority = document.getElementById('input-deal-priority').value;
+      const expectedCloseDate = document.getElementById('input-deal-forecast').value;
       const rawTags = document.getElementById('input-customer-tags').value;
       const tags = rawTags.split(',').map(t => t.trim()).filter(Boolean);
       const notes = document.getElementById('input-customer-notes').value.trim();
@@ -201,6 +510,7 @@ function setupDialogEvents() {
         dealValue,
         stage,
         priority,
+        expectedCloseDate,
         tags,
         notes
       };
@@ -222,8 +532,7 @@ function setupDialogEvents() {
 
 window.handleOpenEditCustomer = function(customerId) {
   const customerDialog = document.getElementById('customer-dialog');
-  const customers = storage.getCustomers();
-  const customer = customers.find(c => c.id === customerId);
+  const customer = storage.getCustomer(customerId);
   if (!customer || !customerDialog) return;
 
   document.getElementById('dialog-customer-id').value = customer.id;
@@ -236,6 +545,7 @@ window.handleOpenEditCustomer = function(customerId) {
   document.getElementById('input-deal-value').value = customer.dealValue || 0;
   document.getElementById('input-deal-stage').value = customer.stage || 'lead';
   document.getElementById('input-deal-priority').value = customer.priority || 'medium';
+  document.getElementById('input-deal-forecast').value = customer.expectedCloseDate ? customer.expectedCloseDate.split('T')[0] : '';
   document.getElementById('input-customer-tags').value = (customer.tags || []).join(', ');
   document.getElementById('input-customer-notes').value = customer.notes || '';
 
@@ -403,7 +713,7 @@ function setupGeminiModals() {
 
 window.handleAnalyzeWithAI = async function(customerId) {
   const geminiDialog = document.getElementById('gemini-dialog');
-  const customer = storage.getCustomers().find(c => c.id === customerId);
+  const customer = storage.getCustomer(customerId);
   if (!customer || !geminiDialog) return;
 
   // Header info
@@ -464,4 +774,3 @@ function setupExportEvents() {
     });
   }
 }
-

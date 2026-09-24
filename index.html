@@ -49,6 +49,13 @@
           </a>
         </li>
         <li>
+          <a href="#tasks" class="nav-item" data-view="tasks" data-title="Agenda de Tarefas &amp; Follow-up">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Tarefas &amp; Follow-up</span>
+            <span class="nav-count" id="nav-count-tasks">0</span>
+          </a>
+        </li>
+        <li>
           <a href="#metrics" class="nav-item" data-view="metrics" data-title="Visão Geral e Indicadores de Desempenho">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             <span>Métricas &amp; Relatórios</span>
@@ -160,11 +167,92 @@
         </div>
       </section>
 
-      <!-- VIEW 3: Detailed Metrics & Reports -->
+      <!-- VIEW 3: Tasks & Activities Agenda -->
+      <section class="view-section" id="view-tasks">
+        <div class="tasks-layout">
+          <div class="tasks-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+              <div>
+                <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Agenda de Tarefas &amp; Follow-up</h2>
+                <p style="font-size: 0.8rem; color: var(--text-secondary);">Metodologia de Vendas Baseada em Atividades (Activity-Based Selling)</p>
+              </div>
+              <div class="filter-pills" id="task-filter-pills">
+                <span class="filter-pill active" data-task-filter="pending">Pendentes</span>
+                <span class="filter-pill" data-task-filter="today">Para Hoje</span>
+                <span class="filter-pill" data-task-filter="all">Todas</span>
+                <span class="filter-pill" data-task-filter="completed">Concluídas</span>
+              </div>
+            </div>
+
+            <div class="tasks-list" id="tasks-list-container">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+          <div class="tasks-card">
+            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">Nova Atividade / Tarefa</h3>
+            <form id="new-task-form">
+              <div class="form-group" style="margin-bottom: 0.85rem;">
+                <label for="task-input-title">Título da Atividade *</label>
+                <input type="text" id="task-input-title" class="form-input" placeholder="Ex: Ligar para alinhar minuta" required>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0.85rem;">
+                <label for="task-input-type">Tipo de Atividade</label>
+                <select id="task-input-type" class="form-select">
+                  <option value="call">📞 Ligação</option>
+                  <option value="meeting">📅 Reunião</option>
+                  <option value="whatsapp" selected>💬 WhatsApp</option>
+                  <option value="followup">📝 Follow-up / Proposta</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0.85rem;">
+                <label for="task-input-customer">Vincular a uma Oportunidade *</label>
+                <select id="task-input-customer" class="form-select" required>
+                  <!-- Populated dynamically with leads -->
+                </select>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="task-input-date">Data Prevista *</label>
+                <input type="date" id="task-input-date" class="form-input" required>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Agendar Tarefa
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: Detailed Metrics & Sales Intelligence -->
       <section class="view-section" id="view-metrics">
+        <!-- Top Metrics Alert Bar -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+          <div class="table-container" style="padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary);">Previsão de Fechamento (Mês)</span>
+              <span style="font-size: 1.1rem; color: #2563eb;">📅</span>
+            </div>
+            <div class="kpi-value" id="metrics-forecast-value" style="color: #2563eb; font-size: 1.6rem;">R$ 0</div>
+            <p style="font-size: 0.75rem; color: var(--text-muted);">Estimativa de receita com base na data prevista das oportunidades ativas.</p>
+          </div>
+
+          <div class="table-container" style="padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary);">Leads Estagnados (Deal Rotting)</span>
+              <span style="font-size: 1.1rem; color: #d97706;">⏳</span>
+            </div>
+            <div class="kpi-value" id="metrics-rotting-value" style="color: #d97706; font-size: 1.6rem;">0</div>
+            <p style="font-size: 0.75rem; color: var(--text-muted);">Oportunidades em aberto sem interação recente há mais de 3 dias.</p>
+          </div>
+        </div>
+
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
           <div class="table-container" style="padding: 1.5rem;">
-            <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem;">Distribuição de Valor por Etapa do Funil</h2>
+            <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Distribuição de Valor por Etapa do Funil</h2>
             <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem;">
               Visão consolidada do volume financeiro alocado em cada fase do ciclo de vendas.
             </p>
@@ -204,22 +292,36 @@
             </div>
           </div>
 
-          <div class="table-container" style="padding: 1.5rem;">
-            <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Banco de Dados</h2>
-            <div style="background: var(--bg-deep); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
-                <strong style="font-size: 0.85rem;">Google Cloud Firestore</strong>
-              </div>
-              <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">
-                Conexão NoSQL em nuvem com baixa latência e sincronização de dados multi-cliente em tempo real.
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Loss Reasons Breakdown Card -->
+            <div class="table-container" style="padding: 1.5rem;">
+              <h2 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 0.4rem; color: #dc2626;">Análise de Motivos de Perda</h2>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                Razões mais frequentes registradas ao encerrar oportunidades como perdidas.
               </p>
+              <div id="metrics-loss-reasons" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <!-- Populated dynamically -->
+              </div>
             </div>
-            <ul style="list-style: none; font-size: 0.8rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.6rem;">
-              <li>✓ Coleção <code>customers</code> gerenciada</li>
-              <li>✓ Sincronização automática via <code>onSnapshot</code></li>
-              <li>✓ Suporte offline nativo</li>
-            </ul>
+
+            <!-- Database Info -->
+            <div class="table-container" style="padding: 1.5rem;">
+              <h2 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 0.85rem;">Banco de Dados</h2>
+              <div style="background: var(--bg-deep); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.85rem; margin-bottom: 0.85rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: #16a34a;"></span>
+                  <strong style="font-size: 0.85rem;">Google Cloud Firestore</strong>
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">
+                  Sincronização multi-cliente em tempo real via <code>onSnapshot</code>.
+                </p>
+              </div>
+              <ul style="list-style: none; font-size: 0.8rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.4rem;">
+                <li>✓ Histórico de atividades sincronizado</li>
+                <li>✓ Agenda de tarefas em tempo real</li>
+                <li>✓ Suporte offline nativo</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -296,6 +398,11 @@
           </div>
 
           <div class="form-group">
+            <label for="input-deal-forecast">Previsão de Fechamento</label>
+            <input type="date" id="input-deal-forecast" class="form-input" title="Data prevista para assinatura ou fechamento">
+          </div>
+
+          <div class="form-group">
             <label for="input-customer-tags">Tags / Etiquetas (separadas por vírgula)</label>
             <input type="text" id="input-customer-tags" class="form-input" placeholder="Cloud, Enterprise, Q4">
           </div>
@@ -315,7 +422,149 @@
   </dialog>
 
   <!-- ========================================================================
-       MODAL 2: Google Cloud Firestore Config Dialog
+       MODAL: Loss Reason Dialog (Motivo de Perda)
+       ======================================================================== -->
+  <dialog id="loss-reason-dialog" class="crm-dialog" style="max-width: 500px;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: #dc2626; font-size: 1.2rem;">🛑</span>
+        <h2 class="dialog-title">Qual o motivo da perda?</h2>
+      </div>
+      <button type="button" class="action-btn" id="btn-close-loss-dialog" aria-label="Fechar modal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <form id="loss-reason-form">
+      <input type="hidden" id="loss-customer-id">
+      <div class="dialog-body">
+        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem;">
+          Registrar o motivo de perda ajuda a entender objeções comerciais e aprimorar a estratégia de vendas.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="select-loss-reason">Motivo Principal *</label>
+          <select id="select-loss-reason" class="form-select" required>
+            <option value="price">💰 Preço / Orçamento insuficiente</option>
+            <option value="competitor">⚔️ Optou pelo Concorrente</option>
+            <option value="timing">⏳ Timing / Projeto adiado</option>
+            <option value="features">⚙️ Falta de recursos / Produto</option>
+            <option value="ghosting">👻 Parou de responder (Ghosting)</option>
+            <option value="cancelled">🚫 Iniciativa cancelada pelo cliente</option>
+            <option value="other">📌 Outro motivo</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="input-loss-details">Observações / Detalhes Adicionais</label>
+          <textarea id="input-loss-details" class="form-textarea" placeholder="Ex: Fechou com concorrente X por causa de prazo de entrega..."></textarea>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-outline" id="btn-cancel-loss-dialog">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="background: #dc2626; border-color: #dc2626;">Confirmar Perda</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ========================================================================
+       MODAL: WhatsApp Templates Selector Dialog
+       ======================================================================== -->
+  <dialog id="whatsapp-dialog" class="crm-dialog" style="max-width: 560px;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: #16a34a; font-size: 1.25rem;">💬</span>
+        <div>
+          <h2 class="dialog-title" id="wa-dialog-title">Enviar Mensagem via WhatsApp</h2>
+          <div style="font-size: 0.75rem; color: var(--text-muted);" id="wa-dialog-subtitle"></div>
+        </div>
+      </div>
+      <button type="button" class="action-btn" id="btn-close-wa-dialog" aria-label="Fechar modal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="dialog-body">
+      <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.85rem;">
+        Selecione um modelo de abordagem comercial rápida ou personalize a mensagem:
+      </p>
+
+      <div class="wa-template-grid" id="wa-templates-container">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="form-group">
+        <label for="wa-custom-message">Texto da Mensagem</label>
+        <textarea id="wa-custom-message" class="form-textarea" style="min-height: 90px;"></textarea>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-outline" id="btn-cancel-wa-dialog">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-send-wa-confirm" style="background: #16a34a; border-color: #16a34a;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+        <span>Abrir WhatsApp Web</span>
+      </button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================
+       MODAL: Lead Details & Activity Timeline Dialog
+       ======================================================================== -->
+  <dialog id="lead-details-dialog" class="crm-dialog" style="max-width: 680px;">
+    <div class="dialog-header">
+      <div>
+        <h2 class="dialog-title" id="lead-details-name">Detalhes da Oportunidade</h2>
+        <div style="font-size: 0.78rem; color: var(--text-muted);" id="lead-details-meta"></div>
+      </div>
+      <button type="button" class="action-btn" id="btn-close-lead-details" aria-label="Fechar modal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="dialog-body">
+      <!-- Quick Action Toolbar -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-log-call">
+          📞 Registrar Ligação
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-log-meeting">
+          📅 Registrar Reunião
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-log-note">
+          📝 Adicionar Nota
+        </button>
+      </div>
+
+      <!-- Quick Note Form (Collapsible) -->
+      <div id="quick-activity-form-container" style="display: none; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem;">
+        <h4 style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);" id="quick-activity-title">Registrar Interação</h4>
+        <input type="hidden" id="quick-activity-type" value="note">
+        <textarea id="quick-activity-text" class="form-textarea" placeholder="Descreva os pontos principais da conversa..." style="min-height: 70px; margin-bottom: 0.75rem;"></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" id="btn-cancel-quick-activity">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-save-quick-activity">Salvar Registro</button>
+        </div>
+      </div>
+
+      <!-- Timeline Title -->
+      <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+        <span>📜 Linha do Tempo &amp; Histórico</span>
+      </h3>
+
+      <div class="timeline-container" id="lead-details-timeline">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-outline" id="btn-close-lead-details-footer">Fechar</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================
+       MODAL: Google Cloud Firestore Config Dialog
        ======================================================================== -->
   <dialog id="firebase-dialog" class="crm-dialog">
     <div class="dialog-header">
