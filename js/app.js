@@ -61,6 +61,12 @@ import {
   generateCredentialsShareText, 
   onEmployeesChange 
 } from './employee-service.js';
+import { 
+  initTheme, 
+  toggleTheme, 
+  setTheme, 
+  getSavedTheme 
+} from './theme-manager.js';
 
 let draggedCustomerId = null;
 let activeWhatsAppCustomerId = null;
@@ -72,6 +78,7 @@ let activeProposalCustomerId = null;
 // ==========================================================================
 async function initApp() {
   try {
+    initTheme();
     setupNavigation();
     setupFilterEvents();
     setupDialogEvents();
@@ -1508,6 +1515,18 @@ function setupCommandPalette() {
     const customers = state.allCustomers || [];
 
     const defaultActions = [
+      {
+        id: 'action-toggle-theme',
+        icon: '🌓',
+        title: 'Alternar Modo Noturno / Claro (Doctor+)',
+        hint: 'Atalho: Alt + T',
+        category: 'Aparência & Interface',
+        run: () => {
+          window.closeCommandPalette();
+          const newTheme = toggleTheme();
+          showToast(newTheme === 'dark' ? '🌙 Modo Noturno Doctor+ ativado' : '☀️ Modo Claro ativado', 'info');
+        }
+      },
       {
         id: 'action-new-lead',
         icon: '➕',

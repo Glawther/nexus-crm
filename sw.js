@@ -3,7 +3,7 @@
  * Tríade CID: Disponibilidade (D)
  */
 
-const CACHE_NAME = 'nexus-crm-v1.3.2';
+const CACHE_NAME = 'nexus-crm-v1.4.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -14,6 +14,7 @@ const STATIC_ASSETS = [
   '/css/components.css',
   '/css/animations.css',
   '/js/config.js',
+  '/js/theme-manager.js',
   '/js/auth-service.js',
   '/js/employee-service.js',
   '/js/crm-store.js',

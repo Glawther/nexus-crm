@@ -21,10 +21,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/design-tokens.css?v=1.3.2">
-  <link rel="stylesheet" href="css/layout.css?v=1.3.2">
-  <link rel="stylesheet" href="css/components.css?v=1.3.2">
-  <link rel="stylesheet" href="css/animations.css?v=1.3.2">
+  <link rel="stylesheet" href="css/design-tokens.css?v=1.4.0">
+  <link rel="stylesheet" href="css/layout.css?v=1.4.0">
+  <link rel="stylesheet" href="css/components.css?v=1.4.0">
+  <link rel="stylesheet" href="css/animations.css?v=1.4.0">
+  <!-- Pre-render Theme Application (Doctor+ Dark / Light) -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('nexus_crm_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
 </head>
 <body>
 
@@ -155,6 +162,9 @@
         </div>
         <span class="brand-name">Nexus CRM</span>
         <span class="brand-badge">Cloud</span>
+        <button type="button" class="brand-theme-btn" id="btn-brand-theme-toggle" title="Alternar Modo Noturno / Claro">
+          <span class="theme-icon-moon">🌙</span>
+        </button>
       </div>
 
       <ul class="nav-menu">
@@ -237,6 +247,14 @@
             <span>Google Cloud</span>
           </button>
 
+          <!-- Doctor+ Theme Switcher Toggle Pill -->
+          <button type="button" class="theme-toggle-switch" id="btn-header-theme-toggle" title="Alternar Modo Noturno / Claro (Alt + T)">
+            <span class="theme-switch-track">
+              <span class="theme-switch-thumb"></span>
+            </span>
+            <span class="theme-toggle-label">Noturno</span>
+          </button>
+
           <!-- Unified Tools & Actions Dropdown (Despoluição da Barra) -->
           <div class="dropdown-wrapper" id="header-tools-dropdown-wrapper">
             <button type="button" class="btn btn-outline btn-sm header-tools-btn" id="btn-header-tools" title="Menu de Ferramentas e Exportação">
@@ -266,6 +284,14 @@
               <div class="dropdown-item-text">
                 <span class="dropdown-item-title">Exportar Auditoria (CID)</span>
                 <span class="dropdown-item-desc">Relatório de integridade e logs</span>
+              </div>
+            </button>
+
+            <button type="button" class="dropdown-item" id="btn-menu-theme">
+              <span class="dropdown-item-icon">🌓</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title" id="menu-theme-label">Ativar Modo Claro (☀️)</span>
+                <span class="dropdown-item-desc">Alternar visual (Atalho Alt + T)</span>
               </div>
             </button>
 
@@ -1395,7 +1421,7 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
   <input type="file" id="backup-file-input" style="display: none;" accept=".json">
 
   <!-- Entry Point Script -->
-  <script type="module" src="js/app.js?v=1.3.2"></script>
+  <script type="module" src="js/app.js?v=1.4.0"></script>
 
 </body>
 </html>
