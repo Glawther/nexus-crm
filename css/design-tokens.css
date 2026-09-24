@@ -1,0 +1,80 @@
+:root {
+  /* ==========================================================================
+     Color Palette (HSL Tailored)
+     ========================================================================== */
+  /* Neutrals & Surfaces */
+  --bg-deep: #07090e;
+  --bg-primary: #0b0f19;
+  --bg-surface: #111827;
+  --bg-surface-elevated: #1a2234;
+  --bg-surface-glass: rgba(17, 24, 39, 0.72);
+  --bg-surface-glass-border: rgba(255, 255, 255, 0.08);
+  --bg-surface-glass-hover: rgba(255, 255, 255, 0.04);
+  
+  /* Text & Foreground */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  /* Brand Accents */
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-secondary: #a855f7;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+  --accent-gradient-glow: 0 0 24px rgba(99, 102, 241, 0.35);
+
+  /* Status Colors */
+  --color-lead: #06b6d4;
+  --color-lead-bg: rgba(6, 182, 212, 0.12);
+  
+  --color-contact: #3b82f6;
+  --color-contact-bg: rgba(59, 130, 246, 0.12);
+
+  --color-proposal: #f59e0b;
+  --color-proposal-bg: rgba(245, 158, 11, 0.12);
+
+  --color-negotiation: #8b5cf6;
+  --color-negotiation-bg: rgba(139, 92, 246, 0.12);
+
+  --color-won: #10b981;
+  --color-won-bg: rgba(16, 185, 129, 0.12);
+
+  --color-lost: #ef4444;
+  --color-lost-bg: rgba(239, 68, 68, 0.12);
+
+  /* Priorities */
+  --priority-high: #f43f5e;
+  --priority-medium: #f59e0b;
+  --priority-low: #10b981;
+
+  /* Borders & Dividers */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-focus: rgba(99, 102, 241, 0.6);
+
+  /* Typography */
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Shadows & Elevation */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 12px 30px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Layout Spacing */
+  --sidebar-width: 260px;
+  --header-height: 70px;
+}

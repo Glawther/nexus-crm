@@ -1,0 +1,8 @@
+# Nexus CRM - Git Ignore
+.env
+.env.local
+*.log
+node_modules/
+.firebase/
+.DS_Store
+Thumbs.db
