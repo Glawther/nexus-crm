@@ -459,7 +459,7 @@ class StorageManager {
 
     // 2. Cloud Firestore Persist
     if (this.mode === 'firestore') {
-      const docId = customer?.firestoreId || customer?.id || customerId;
+      const docId = customer?.firestoreId || (customer?.id && !customer.id.startsWith('lead-') ? customer.id : null) || customerId;
       const updatedActivities = customer && customer.activities ? [...customer.activities] : [activity];
       await firestoreService.updateFirestoreCustomer(docId, { 
         stage: newStage, 
@@ -504,7 +504,7 @@ class StorageManager {
 
     // 2. Cloud Firestore Persist
     if (this.mode === 'firestore') {
-      const docId = customer?.firestoreId || customer?.id || customerId;
+      const docId = customer?.firestoreId || (customer?.id && !customer.id.startsWith('lead-') ? customer.id : null) || customerId;
       const updatedActivities = customer && customer.activities ? [...customer.activities] : [activity];
       await firestoreService.updateFirestoreCustomer(docId, {
         stage: 'lost',

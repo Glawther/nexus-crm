@@ -67,10 +67,13 @@ export async function subscribeToFirestoreCustomers(onData, onError) {
       const customers = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
+        const clientOldId = data.id;
+        delete data.id; // Crucial: ensure internal data field 'id' NEVER overrides the real document ID!
         customers.push({
           ...data,
           id: doc.id,
-          firestoreId: doc.id
+          firestoreId: doc.id,
+          clientLeadId: clientOldId || data.clientLeadId || doc.id
         });
       });
       onData(customers);
@@ -110,6 +113,7 @@ export async function addFirestoreCustomer(customerData) {
 
 /**
  * Updates an existing customer document in Firestore
+ * Resilient to both official Firestore document IDs and legacy client lead IDs (lead-...)
  */
 export async function updateFirestoreCustomer(id, partialData) {
   if (!db) throw new Error("Firestore não inicializado.");
@@ -119,14 +123,62 @@ export async function updateFirestoreCustomer(id, partialData) {
   delete cleanData.id;
   delete cleanData.firestoreId;
 
-  const docRef = firestore.doc(db, "customers", id);
   const payload = {
     ...cleanData,
     updatedAt: new Date().toISOString()
   };
 
-  await firestore.updateDoc(docRef, payload);
-  return { id, firestoreId: id, ...payload };
+  // If the provided ID is a client-generated legacy ID (starts with lead-), search collection
+  if (id && typeof id === 'string' && id.startsWith('lead-')) {
+    try {
+      const col = firestore.collection(db, "customers");
+      const q1 = firestore.query(col, firestore.where("id", "==", id));
+      const snap1 = await firestore.getDocs(q1);
+      if (!snap1.empty) {
+        const actualDoc = snap1.docs[0];
+        await firestore.updateDoc(actualDoc.ref, payload);
+        return { id: actualDoc.id, firestoreId: actualDoc.id, ...payload };
+      }
+
+      const q2 = firestore.query(col, firestore.where("clientLeadId", "==", id));
+      const snap2 = await firestore.getDocs(q2);
+      if (!snap2.empty) {
+        const actualDoc = snap2.docs[0];
+        await firestore.updateDoc(actualDoc.ref, payload);
+        return { id: actualDoc.id, firestoreId: actualDoc.id, ...payload };
+      }
+    } catch (searchErr) {
+      console.warn("Error resolving document by client lead ID:", searchErr);
+    }
+  }
+
+  // Direct update by Firestore document ID
+  const docRef = firestore.doc(db, "customers", id);
+  try {
+    await firestore.updateDoc(docRef, payload);
+    return { id, firestoreId: id, ...payload };
+  } catch (err) {
+    // If not found, attempt fallback search by id or clientLeadId
+    if (err.message && (err.message.includes('No document to update') || err.code === 'not-found')) {
+      const col = firestore.collection(db, "customers");
+      const q1 = firestore.query(col, firestore.where("id", "==", id));
+      const snap1 = await firestore.getDocs(q1);
+      if (!snap1.empty) {
+        const actualDoc = snap1.docs[0];
+        await firestore.updateDoc(actualDoc.ref, payload);
+        return { id: actualDoc.id, firestoreId: actualDoc.id, ...payload };
+      }
+
+      const q2 = firestore.query(col, firestore.where("clientLeadId", "==", id));
+      const snap2 = await firestore.getDocs(q2);
+      if (!snap2.empty) {
+        const actualDoc = snap2.docs[0];
+        await firestore.updateDoc(actualDoc.ref, payload);
+        return { id: actualDoc.id, firestoreId: actualDoc.id, ...payload };
+      }
+    }
+    throw err;
+  }
 }
 
 /**
@@ -136,8 +188,26 @@ export async function deleteFirestoreCustomer(id) {
   if (!db) throw new Error("Firestore não inicializado.");
   const { firestore } = await loadFirebaseModules();
 
-  const docRef = firestore.doc(db, "customers", id);
-  await firestore.deleteDoc(docRef);
+  let targetRef = firestore.doc(db, "customers", id);
+
+  if (id && typeof id === 'string' && id.startsWith('lead-')) {
+    try {
+      const col = firestore.collection(db, "customers");
+      const q1 = firestore.query(col, firestore.where("id", "==", id));
+      const snap1 = await firestore.getDocs(q1);
+      if (!snap1.empty) {
+        targetRef = snap1.docs[0].ref;
+      } else {
+        const q2 = firestore.query(col, firestore.where("clientLeadId", "==", id));
+        const snap2 = await firestore.getDocs(q2);
+        if (!snap2.empty) targetRef = snap2.docs[0].ref;
+      }
+    } catch (e) {
+      console.warn("Could not find document by field id for deletion:", e);
+    }
+  }
+
+  await firestore.deleteDoc(targetRef);
   return true;
 }
 
