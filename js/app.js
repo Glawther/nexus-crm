@@ -640,7 +640,7 @@ function setupDialogEvents() {
   const customerDialog = document.getElementById('customer-dialog');
   const customerForm = document.getElementById('customer-form');
   const btnNewLead = document.getElementById('btn-new-lead');
-  const btnBottomLeftLead = document.getElementById('btn-bottom-left-lead');
+  const btnBottomRightLead = document.getElementById('btn-bottom-right-lead');
   const btnCloseDialog = document.getElementById('btn-close-customer-dialog');
   const btnCancelDialog = document.getElementById('btn-cancel-customer-dialog');
 
@@ -665,7 +665,7 @@ function setupDialogEvents() {
   };
 
   if (btnNewLead) btnNewLead.addEventListener('click', openNewLead);
-  if (btnBottomLeftLead) btnBottomLeftLead.addEventListener('click', openNewLead);
+  if (btnBottomRightLead) btnBottomRightLead.addEventListener('click', openNewLead);
 
   const closeDialog = () => customerDialog && customerDialog.close();
   if (btnCloseDialog) btnCloseDialog.addEventListener('click', closeDialog);
@@ -1897,7 +1897,24 @@ function setupHeaderToolsMenu() {
     btnTools.classList.remove('active');
   }
 
-  btnTools.addEventListener('click', toggleMenu);
+  if (btnTools && menu) {
+    btnTools.addEventListener('click', toggleMenu);
+  }
+
+  const btnSidebarGemini = document.getElementById('sidebar-gemini-btn');
+  const btnSidebarFirebase = document.getElementById('sidebar-firebase-btn');
+
+  if (btnSidebarGemini) {
+    btnSidebarGemini.addEventListener('click', () => {
+      closeMenu();
+    });
+  }
+
+  if (btnSidebarFirebase) {
+    btnSidebarFirebase.addEventListener('click', () => {
+      closeMenu();
+    });
+  }
 
   document.addEventListener('click', (e) => {
     if (!menu.contains(e.target) && e.target !== btnTools) {

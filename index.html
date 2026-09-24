@@ -205,23 +205,38 @@
       </ul>
 
       <div class="sidebar-footer">
-        <!-- Botão de Adicionar Lead no canto inferior esquerdo (Doctor+ Neon Lime) -->
-        <button type="button" class="btn btn-primary btn-bottom-left-lead" id="btn-bottom-left-lead" title="Cadastrar nova oportunidade comercial (+)">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>+ Novo Lead</span>
-        </button>
-
-        <!-- Menu de Ferramentas e Exportação (Reposicionado na Barra Lateral) -->
+        <!-- Menu de Ferramentas, Inteligência e Configurações (Reposicionado na Barra Lateral) -->
         <div class="dropdown-wrapper sidebar-tools-wrapper" id="header-tools-dropdown-wrapper">
-          <button type="button" class="btn btn-secondary btn-sm sidebar-tool-btn" id="btn-header-tools" title="Menu de Ferramentas, Importação e Atalhos">
+          <button type="button" class="btn btn-secondary btn-sm sidebar-tool-btn" id="btn-header-tools" title="Menu de Ferramentas, Inteligência e Configurações">
             <span style="display: flex; align-items: center; gap: 0.5rem;">
               <span style="font-size: 0.95rem;">⚡</span>
-              <span style="font-weight: 600;">Ferramentas</span>
+              <span style="font-weight: 600;">Ferramentas &amp; Ajustes</span>
             </span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg class="tool-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         
           <div class="dropdown-menu sidebar-dropdown-menu" id="header-tools-menu" style="display: none;">
+            <!-- Inteligência Artificial & Nuvem (Dentro do Menu de Ferramentas) -->
+            <div class="tools-group-title">Inteligência &amp; Nuvem</div>
+            <button type="button" class="dropdown-item" id="sidebar-gemini-btn">
+              <span class="dropdown-item-icon">✨</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Gemini AI Config</span>
+                <span class="dropdown-item-desc">Ajustar chave API e modelos</span>
+              </div>
+            </button>
+            
+            <button type="button" class="dropdown-item" id="sidebar-firebase-btn">
+              <span class="dropdown-item-icon">☁️</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Google Cloud Config</span>
+                <span class="dropdown-item-desc">Conexão Firestore e sync</span>
+              </div>
+            </button>
+
+            <div class="dropdown-divider"></div>
+
+            <div class="tools-group-title">Operações &amp; Dados</div>
             <button type="button" class="dropdown-item" id="btn-menu-import">
               <span class="dropdown-item-icon">📥</span>
               <div class="dropdown-item-text">
@@ -246,6 +261,8 @@
               </div>
             </button>
 
+            <div class="dropdown-divider"></div>
+
             <button type="button" class="dropdown-item" id="btn-menu-shortcuts">
               <span class="dropdown-item-icon">⌨️</span>
               <div class="dropdown-item-text">
@@ -258,22 +275,10 @@
               <span class="dropdown-item-icon">📲</span>
               <div class="dropdown-item-text">
                 <span class="dropdown-item-title">Instalar Aplicativo</span>
-                <span class="dropdown-item-desc">Usar Nexus CRM como App no PC ou Celular</span>
+                <span class="dropdown-item-desc">Usar Nexus CRM como App nativo</span>
               </div>
             </button>
           </div>
-        </div>
-
-        <!-- Botões Compactos de Configuração Gemini / Google Cloud -->
-        <div class="sidebar-config-row">
-          <button type="button" class="btn btn-secondary btn-sm sidebar-config-btn" id="sidebar-gemini-btn" title="Configurar Inteligência Artificial Gemini">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-            <span>Gemini AI</span>
-          </button>
-          <button type="button" class="btn btn-secondary btn-sm sidebar-config-btn" id="sidebar-firebase-btn" title="Configurar Google Cloud Firestore">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            <span>Cloud</span>
-          </button>
         </div>
 
         <!-- Perfil do Usuário e Papel de Acesso (RBAC / Tríade CID) -->
@@ -294,30 +299,29 @@
           <h1 class="page-title" id="current-page-title">Pipeline de Vendas</h1>
         </div>
 
-        <!-- BOTÃO CENTRALIZADO DE ADICIONAR LEAD / NOVA OPORTUNIDADE -->
+        <!-- BARRA DE PESQUISA MAIOR CENTRALIZADA -->
         <div class="header-center">
-          <button type="button" class="btn btn-primary btn-header-lead" id="btn-new-lead" title="Cadastrar nova oportunidade comercial (N)">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>+ Nova Oportunidade</span>
-          </button>
+          <div class="search-box-large">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="global-search-input" placeholder="Buscar por cliente, empresa, telefone ou tag..." autocomplete="off">
+            <button type="button" class="search-kbd-trigger" id="btn-open-command-palette" title="Abrir busca rápida e comandos (Ctrl + K)">
+              <kbd>Ctrl K</kbd>
+            </button>
+          </div>
         </div>
 
+        <!-- BOTÃO DE LEAD NO CANTO DIREITO + STATUS CLOUD -->
         <div class="header-right">
-          <!-- Campo de Busca Global -->
-          <div class="search-box">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="global-search-input" placeholder="Buscar cliente, empresa ou tag..." autocomplete="off">
-          </div>
-
-          <!-- Gatilho da Command Palette (Ctrl + K) -->
-          <button type="button" class="btn btn-outline btn-sm command-palette-trigger" id="btn-open-command-palette" title="Abrir busca rápida e comandos (Ctrl + K)">
-            <kbd>Ctrl K</kbd>
-          </button>
-
           <!-- Status de Conexão com Google Cloud -->
           <button type="button" class="connection-pill local" id="connection-status-pill" title="Configurar conexão com o Google Cloud Firestore">
             <span class="pulse-dot"></span>
             <span>Google Cloud</span>
+          </button>
+
+          <!-- Botão de Lead no Canto Direito (Sem ++ Duplo) -->
+          <button type="button" class="btn btn-primary btn-header-lead" id="btn-new-lead" title="Cadastrar nova oportunidade comercial (N)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Nova Oportunidade</span>
           </button>
         </div>
 
@@ -327,6 +331,12 @@
         <button type="button" id="btn-open-shortcuts" style="display: none;"></button>
         <button type="button" id="btn-install-pwa" style="display: none;"></button>
       </header>
+
+      <!-- Floating Action Button: Nova Oportunidade no Canto Inferior Direito (FAB) -->
+      <button type="button" class="fab-bottom-right-lead" id="btn-bottom-right-lead" title="Cadastrar nova oportunidade comercial (N)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Nova Oportunidade</span>
+      </button>
 
     <!-- ======================================================================
          Main Content Area
