@@ -46,6 +46,21 @@ import {
   exportAuditLogsToCSV, 
   exportBackupToJSON 
 } from './export-service.js';
+import { 
+  formatCPF, 
+  validateCPF, 
+  maskCPF, 
+  generateTemporaryPassword, 
+  saveEmployee, 
+  getEmployees, 
+  resetEmployeePassword, 
+  toggleEmployeeStatus, 
+  deleteEmployee, 
+  verifyEmployeeLogin, 
+  setEmployeePermanentPassword, 
+  generateCredentialsShareText, 
+  onEmployeesChange 
+} from './employee-service.js';
 
 let draggedCustomerId = null;
 let activeWhatsAppCustomerId = null;
@@ -74,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupKeyboardShortcuts();
   setupPWA();
   setupHeaderToolsMenu();
+  setupEmployeeManagementEvents();
 
   // Setup Auth state
   onAuthChange((user) => {
@@ -1235,20 +1251,71 @@ function setupAuthPortalEvents() {
     });
   }
 
-  // Form Login submit
+  // Live CPF auto-mask on login input if typing numbers
+  const loginInput = document.getElementById('login-input-email');
+  if (loginInput) {
+    loginInput.addEventListener('input', () => {
+      const val = loginInput.value;
+      const digitsOnly = val.replace(/\D/g, '');
+      // If starts with numbers or looks like a CPF
+      if (digitsOnly.length > 2 && !val.includes('@')) {
+        loginInput.value = formatCPF(val);
+      }
+    });
+  }
+
+  // Form Login submit (Supports CPF or Email + Temporary Password detection)
   if (formLogin) {
     formLogin.addEventListener('submit', (e) => {
       e.preventDefault();
-      const email = document.getElementById('login-input-email').value.trim();
+      const loginValue = document.getElementById('login-input-email').value.trim();
       const password = document.getElementById('login-input-password').value;
       const role = document.getElementById('login-select-role').value;
 
-      if (!email || !password) {
+      if (!loginValue || !password) {
         showToast("Preencha todos os campos para entrar.", "error");
         return;
       }
 
-      loginWithEmail(email, password, role);
+      // Check if matches an employee by CPF or Email
+      const empAuth = verifyEmployeeLogin(loginValue, password);
+      if (empAuth.success) {
+        const emp = empAuth.employee;
+        if (empAuth.requirePasswordChange) {
+          // Open first-access modal to force permanent password definition
+          const firstAccessDialog = document.getElementById('first-access-password-dialog');
+          const inputEmpId = document.getElementById('first-access-employee-id');
+          const spanEmpName = document.getElementById('first-access-employee-name');
+          if (firstAccessDialog && inputEmpId && spanEmpName) {
+            inputEmpId.value = emp.id;
+            spanEmpName.textContent = emp.name;
+            firstAccessDialog.showModal();
+            showToast("🔒 Primeiro acesso detectado! Crie sua senha definitiva.", "info");
+            return;
+          }
+        }
+
+        // Login as employee
+        loginAsDemoRole(emp.role || USER_ROLES.EMPLOYEE);
+        const currentUserObj = getCurrentUser();
+        if (currentUserObj) {
+          currentUserObj.name = emp.name + (emp.role === 'admin' ? ' (Administrador)' : ' (Consultor)');
+          currentUserObj.email = emp.email;
+          currentUserObj.cpf = emp.cpf;
+        }
+        crmStore.addAuditLog('Login de Colaborador', `Colaborador "${emp.name}" autenticado com sucesso (CPF: ${maskCPF(emp.cpf)}).`);
+        window.hideAuthPortal();
+        showToast(`Bem-vindo(a) ao Nexus CRM, ${emp.name}!`, "success");
+        return;
+      }
+
+      if (empAuth.error && empAuth.error.includes('bloqueado')) {
+        showToast(empAuth.error, "error");
+        return;
+      }
+
+      // Fallback for demo logins / email logins
+      loginWithEmail(loginValue, password, role);
       window.hideAuthPortal();
       const roleLabel = role === 'admin' ? 'Administrador 🛡️' : 'Funcionário 💼';
       showToast(`Bem-vindo(a) ao Nexus CRM! Perfil ativo: ${roleLabel}`, "success");
@@ -1792,6 +1859,276 @@ function setupHeaderToolsMenu() {
   window.addEventListener('appinstalled', () => {
     if (btnMenuPwa) btnMenuPwa.style.display = 'none';
   });
+}
+
+// ==========================================================================
+// Employee Management Events (Tríade CID / RBAC)
+// ==========================================================================
+function setupEmployeeManagementEvents() {
+  const dialog = document.getElementById('employee-dialog');
+  const form = document.getElementById('employee-form');
+  const inputName = document.getElementById('emp-input-name');
+  const inputCpf = document.getElementById('emp-input-cpf');
+  const inputEmail = document.getElementById('emp-input-email');
+  const inputPhone = document.getElementById('emp-input-phone');
+  const inputJob = document.getElementById('emp-input-job');
+  const inputDept = document.getElementById('emp-input-department');
+  const selectRole = document.getElementById('emp-select-role');
+  const inputPassword = document.getElementById('emp-input-password');
+  const checkRequire = document.getElementById('emp-check-require-change');
+  const feedbackCpf = document.getElementById('cpf-validation-feedback');
+
+  const btnClose = document.getElementById('btn-close-employee-dialog');
+  const btnCancel = document.getElementById('btn-cancel-employee');
+  const btnGenerate = document.getElementById('btn-generate-temp-password');
+  const btnCopyField = document.getElementById('btn-copy-temp-password-field');
+
+  // First Access Password Modal
+  const firstAccessDialog = document.getElementById('first-access-password-dialog');
+  const formFirstAccess = document.getElementById('form-first-access-password');
+  const inputFirstAccessEmpId = document.getElementById('first-access-employee-id');
+  const inputFirstAccessNew = document.getElementById('first-access-new-password');
+  const inputFirstAccessConfirm = document.getElementById('first-access-confirm-password');
+
+  // Open modal
+  window.openEmployeeModal = function(empToEdit = null) {
+    if (!dialog) return;
+    form.reset();
+    document.getElementById('employee-id').value = '';
+    if (feedbackCpf) {
+      feedbackCpf.textContent = '';
+      feedbackCpf.className = 'field-feedback-badge';
+    }
+
+    if (empToEdit) {
+      document.getElementById('employee-dialog-title').textContent = 'Editar Colaborador';
+      document.getElementById('employee-id').value = empToEdit.id;
+      inputName.value = empToEdit.name;
+      inputCpf.value = empToEdit.cpf;
+      inputEmail.value = empToEdit.email;
+      inputPhone.value = empToEdit.phone || '';
+      inputJob.value = empToEdit.jobTitle || '';
+      inputDept.value = empToEdit.department || 'Comercial B2B';
+      selectRole.value = empToEdit.role || USER_ROLES.EMPLOYEE;
+      inputPassword.value = empToEdit.tempPassword || '';
+      checkRequire.checked = !!empToEdit.requirePasswordChange;
+    } else {
+      document.getElementById('employee-dialog-title').textContent = 'Cadastrar Novo Colaborador';
+      inputPassword.value = generateTemporaryPassword();
+      checkRequire.checked = true;
+    }
+
+    dialog.showModal();
+    setTimeout(() => inputName.focus(), 50);
+  };
+
+  if (dialog) {
+    document.addEventListener('click', (e) => {
+      if (e.target && (e.target.id === 'btn-open-employee-modal' || e.target.closest('#btn-open-employee-modal'))) {
+        window.openEmployeeModal();
+      }
+    });
+
+    if (btnClose) btnClose.addEventListener('click', () => dialog.close());
+    if (btnCancel) btnCancel.addEventListener('click', () => dialog.close());
+
+    if (btnGenerate) {
+      btnGenerate.addEventListener('click', () => {
+        const newPass = generateTemporaryPassword();
+        inputPassword.value = newPass;
+        showToast(`Senha segura gerada: ${newPass}`, 'info');
+      });
+    }
+
+    if (btnCopyField) {
+      btnCopyField.addEventListener('click', () => {
+        if (!inputPassword.value) return;
+        navigator.clipboard.writeText(inputPassword.value);
+        showToast('Senha temporária copiada!', 'success');
+      });
+    }
+
+    // Live CPF formatting and validation
+    if (inputCpf) {
+      inputCpf.addEventListener('input', () => {
+        const raw = inputCpf.value;
+        const formatted = formatCPF(raw);
+        inputCpf.value = formatted;
+
+        const clean = raw.replace(/\D/g, '');
+        if (clean.length === 11) {
+          const isValid = validateCPF(clean);
+          if (isValid) {
+            feedbackCpf.textContent = '✓ CPF Válido';
+            feedbackCpf.className = 'field-feedback-badge valid';
+          } else {
+            feedbackCpf.textContent = '✗ CPF Inválido';
+            feedbackCpf.className = 'field-feedback-badge invalid';
+          }
+        } else {
+          feedbackCpf.textContent = '';
+          feedbackCpf.className = 'field-feedback-badge';
+        }
+      });
+    }
+
+    // Submit form
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const empData = {
+        id: document.getElementById('employee-id').value || null,
+        name: inputName.value.trim(),
+        cpf: inputCpf.value.trim(),
+        email: inputEmail.value.trim(),
+        phone: inputPhone.value.trim(),
+        jobTitle: inputJob.value.trim(),
+        department: inputDept.value,
+        role: selectRole.value,
+        tempPassword: inputPassword.value.trim(),
+        requirePasswordChange: checkRequire.checked
+      };
+
+      const result = saveEmployee(empData);
+      if (!result.success) {
+        showToast(result.error, 'error');
+        return;
+      }
+
+      dialog.close();
+      const shareText = generateCredentialsShareText(result.employee);
+      try {
+        navigator.clipboard.writeText(shareText);
+        showToast(`Colaborador ${result.employee.name} cadastrado! Credenciais copiadas para a área de transferência.`, 'success');
+      } catch {
+        showToast(`Colaborador ${result.employee.name} cadastrado com sucesso!`, 'success');
+      }
+      renderSecurityView(crmStore.getState());
+    });
+  }
+
+  // First Access Password Form
+  if (formFirstAccess) {
+    formFirstAccess.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const empId = inputFirstAccessEmpId.value;
+      const newPass = inputFirstAccessNew.value;
+      const confirmPass = inputFirstAccessConfirm.value;
+
+      if (!newPass || newPass.length < 6) {
+        showToast('A senha deve ter no mínimo 6 caracteres.', 'error');
+        return;
+      }
+
+      if (newPass !== confirmPass) {
+        showToast('As senhas não coincidem. Digite novamente.', 'error');
+        return;
+      }
+
+      const res = setEmployeePermanentPassword(empId, newPass);
+      if (!res.success) {
+        showToast(res.error, 'error');
+        return;
+      }
+
+      if (firstAccessDialog) firstAccessDialog.close();
+
+      // Complete login as this employee
+      const employee = res.employee;
+      loginAsDemoRole(employee.role || USER_ROLES.EMPLOYEE);
+      const currentUserObj = getCurrentUser();
+      if (currentUserObj) {
+        currentUserObj.name = employee.name + ' (Consultor)';
+        currentUserObj.email = employee.email;
+        currentUserObj.cpf = employee.cpf;
+      }
+      window.hideAuthPortal();
+      showToast(`Senha definitiva configurada! Bem-vindo(a) ao Nexus CRM, ${employee.name}!`, 'success');
+    });
+  }
+
+  // Reactive updates on employee list
+  onEmployeesChange(() => {
+    if (crmStore) {
+      renderSecurityView(crmStore.getState());
+    }
+  });
+
+  // Global Handlers for table buttons
+  window.handleToggleCPFVisibility = function(empId) {
+    const textSpan = document.getElementById(`cpf-text-${empId}`);
+    if (!textSpan) return;
+    const isMasked = textSpan.textContent.includes('*');
+    textSpan.textContent = isMasked ? textSpan.dataset.raw : textSpan.dataset.masked;
+  };
+
+  window.handleCopyEmployeeCredentials = function(empId) {
+    const employees = getEmployees();
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) return;
+    const shareText = generateCredentialsShareText(emp);
+    navigator.clipboard.writeText(shareText);
+    showToast(`📋 Credenciais de ${emp.name} copiadas! Envie no WhatsApp ou E-mail.`, 'success');
+  };
+
+  window.handleResetEmployeePassword = function(empId) {
+    const employees = getEmployees();
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) return;
+
+    if (!confirm(`Deseja gerar uma nova senha temporária para ${emp.name}? O colaborador deverá trocá-la no próximo acesso.`)) {
+      return;
+    }
+
+    const res = resetEmployeePassword(empId);
+    if (!res.success) {
+      showToast(res.error, 'error');
+      return;
+    }
+
+    const shareText = generateCredentialsShareText(res.employee);
+    navigator.clipboard.writeText(shareText);
+    showToast(`🔑 Nova senha emitida: ${res.tempPassword}. Credenciais copiadas!`, 'success');
+    renderSecurityView(crmStore.getState());
+  };
+
+  window.handleToggleEmployeeStatus = function(empId) {
+    const employees = getEmployees();
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) return;
+
+    const action = emp.status === 'active' ? 'bloquear' : 'desbloquear';
+    if (!confirm(`Deseja realmente ${action} o acesso de ${emp.name}?`)) {
+      return;
+    }
+
+    const res = toggleEmployeeStatus(empId);
+    if (!res.success) {
+      showToast(res.error, 'error');
+      return;
+    }
+
+    showToast(`Status de ${emp.name}: ${res.status === 'active' ? 'ATIVO 🟢' : 'BLOQUEADO 🔴'}`, 'info');
+    renderSecurityView(crmStore.getState());
+  };
+
+  window.handleDeleteEmployee = function(empId) {
+    const employees = getEmployees();
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) return;
+
+    if (!confirm(`ATENÇÃO: Deseja excluir definitivamente o cadastro de ${emp.name} (${emp.cpf})? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    const res = deleteEmployee(empId);
+    if (!res.success) {
+      showToast(res.error, 'error');
+      return;
+    }
+
+    showToast(`Colaborador ${emp.name} excluído da base.`, 'info');
+    renderSecurityView(crmStore.getState());
+  };
 }
 
 

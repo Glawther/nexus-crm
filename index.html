@@ -69,8 +69,8 @@
 
         <form id="form-auth-login">
           <div class="form-group" style="margin-bottom: 0.85rem;">
-            <label for="login-input-email">E-mail Corporativo</label>
-            <input type="email" id="login-input-email" class="form-input" placeholder="seu.email@empresa.com" required>
+            <label for="login-input-email">E-mail Corporativo ou CPF</label>
+            <input type="text" id="login-input-email" class="form-input" placeholder="seu.email@empresa.com ou 000.000.000-00" required autocomplete="username">
           </div>
 
           <div class="form-group" style="margin-bottom: 0.85rem;">
@@ -1230,6 +1230,147 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
     <div class="dialog-footer">
       <button type="button" class="btn btn-primary" id="btn-close-shortcuts-footer">Entendido</button>
     </div>
+  </dialog>
+
+  <!-- ========================================================================
+       MODAL: Cadastrar / Gerenciar Funcionário (Tríade CID / RBAC)
+       ======================================================================== -->
+  <dialog id="employee-dialog" class="crm-dialog" style="max-width: 620px;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="font-size: 1.25rem;">👥</span>
+        <div>
+          <h2 class="dialog-title" id="employee-dialog-title">Cadastrar Novo Colaborador</h2>
+          <span style="font-size: 0.72rem; color: var(--text-secondary);">Tríade CID • Emissão de Credencial Segura &amp; RBAC</span>
+        </div>
+      </div>
+      <button type="button" class="action-btn" id="btn-close-employee-dialog" aria-label="Fechar modal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <form id="employee-form">
+      <input type="hidden" id="employee-id">
+
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="emp-input-name">Nome Completo do Colaborador *</label>
+            <input type="text" id="emp-input-name" class="form-input" placeholder="Ex: Rodrigo Fagundes Silva" required>
+          </div>
+
+          <div class="form-group">
+            <label for="emp-input-cpf">CPF (com validação oficial) *</label>
+            <div style="position: relative;">
+              <input type="text" id="emp-input-cpf" class="form-input" placeholder="000.000.000-00" maxlength="14" required autocomplete="off">
+              <span id="cpf-validation-feedback" class="field-feedback-badge"></span>
+            </div>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Mascarado por padrão em relatórios (LGPD).</span>
+          </div>
+
+          <div class="form-group">
+            <label for="emp-input-email">E-mail Corporativo *</label>
+            <input type="email" id="emp-input-email" class="form-input" placeholder="rodrigo@suaempresa.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="emp-input-phone">Telefone / WhatsApp</label>
+            <input type="tel" id="emp-input-phone" class="form-input" placeholder="(11) 98888-7777">
+          </div>
+
+          <div class="form-group">
+            <label for="emp-input-job">Cargo / Função *</label>
+            <input type="text" id="emp-input-job" class="form-input" placeholder="Ex: Consultor Comercial B2B" required>
+          </div>
+
+          <div class="form-group">
+            <label for="emp-input-department">Departamento</label>
+            <select id="emp-input-department" class="form-select">
+              <option value="Comercial B2B">Comercial B2B</option>
+              <option value="Novos Negócios / SDR">Novos Negócios / SDR</option>
+              <option value="Key Accounts (Grandes Contas)">Key Accounts (Grandes Contas)</option>
+              <option value="Customer Success &amp; Expansão">Customer Success &amp; Expansão</option>
+              <option value="Diretoria / Gestão">Diretoria / Gestão</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="emp-select-role">Papel de Acesso (RBAC) *</label>
+            <select id="emp-select-role" class="form-select">
+              <option value="employee" selected>💼 Consultor de Vendas (Acesso à Própria Carteira)</option>
+              <option value="admin">🛡️ Administrador do Sistema (Acesso Global 360°)</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width" style="background: #f8fafc; border: 1px solid var(--border-subtle); padding: 0.85rem; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <label for="emp-input-password" style="font-weight: 600; margin: 0; font-size: 0.82rem;">Senha Temporária de Acesso *</label>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-generate-temp-password" style="padding: 3px 8px; font-size: 0.72rem;">
+                ⚡ Gerar Senha Segura
+              </button>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="emp-input-password" class="form-input" style="font-family: monospace; font-weight: 700; letter-spacing: 0.05em;" placeholder="Clique em Gerar Senha" required>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-temp-password-field" title="Copiar senha">
+                📋
+              </button>
+            </div>
+            <div style="margin-top: 0.6rem;">
+              <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; cursor: pointer; color: var(--text-primary);">
+                <input type="checkbox" id="emp-check-require-change" checked>
+                <span><strong>Exigir redefinição de senha no primeiro login</strong> (Recomendado pela Tríade CID)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-employee">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btn-save-employee">Salvar e Emitir Credencial</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ========================================================================
+       MODAL: Troca de Senha Obrigatória no Primeiro Acesso
+       ======================================================================== -->
+  <dialog id="first-access-password-dialog" class="crm-dialog" style="max-width: 480px;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="font-size: 1.25rem;">🔒</span>
+        <div>
+          <h2 class="dialog-title">Primeiro Acesso - Nova Senha</h2>
+          <span style="font-size: 0.72rem; color: var(--text-secondary);">Tríade CID • Governança &amp; Confidencialidade</span>
+        </div>
+      </div>
+    </div>
+
+    <form id="form-first-access-password">
+      <input type="hidden" id="first-access-employee-id">
+
+      <div class="dialog-body">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.8rem; color: #1e40af; line-height: 1.4;">
+          👋 Olá, <strong id="first-access-employee-name">Colaborador</strong>! Você está acessando com uma <strong>senha temporária</strong>. Para garantir a segurança dos dados da sua carteira, crie sua senha pessoal definitiva.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label for="first-access-new-password">Nova Senha Pessoal *</label>
+          <input type="password" id="first-access-new-password" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
+        </div>
+
+        <div class="form-group">
+          <label for="first-access-confirm-password">Confirme a Nova Senha *</label>
+          <input type="password" id="first-access-confirm-password" class="form-input" placeholder="Repita a nova senha" minlength="6" required>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px;">
+          Salvar Senha Definitiva e Acessar CRM
+        </button>
+      </div>
+    </form>
   </dialog>
 
   <!-- Container for Toast Notifications -->

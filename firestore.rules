@@ -34,5 +34,10 @@ service cloud.firestore {
     match /system_config/{configId} {
       allow read, write: if true;
     }
+
+    // 4. Coleção de Funcionários & Credenciais Corporativas (CID / RBAC)
+    match /employees/{employeeId} {
+      allow read, write: if true;
+    }
   }
 }

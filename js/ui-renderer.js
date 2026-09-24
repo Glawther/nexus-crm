@@ -4,6 +4,7 @@
  */
 
 import { STAGES, PRIORITIES, LOSS_REASONS, TASK_TYPES } from './crm-store.js';
+import { getEmployees, maskCPF } from './employee-service.js';
 
 export function formatBRL(amount) {
   return new Intl.NumberFormat('pt-BR', {
@@ -709,6 +710,140 @@ export function renderSecurityView(state) {
         ${isAdm ? 'Simular Visão do Funcionário 💼' : 'Alternar para Administrador 🛡️'}
       </button>
     </div>
+
+    <!-- Painel de Gestão de Funcionários & Credenciais Corporativas (CID/RBAC) -->
+    ${isAdm ? `
+      <div class="employee-management-section">
+        <div class="employee-section-header">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+              <span style="font-size: 1.15rem;">👥</span>
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                Gestão de Colaboradores &amp; Credenciais Corporativas
+              </h3>
+              <span class="badge-status-pending" style="font-size: 0.72rem;">
+                ${getEmployees().length} Cadastrados
+              </span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0;">
+              Cadastre funcionários via <strong>CPF</strong> com emissão de <strong>senha temporária</strong> e exigência de troca no primeiro acesso.
+            </p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-open-employee-modal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Cadastrar Novo Funcionário</span>
+          </button>
+        </div>
+
+        <div class="employee-table-wrapper">
+          <table class="employee-table">
+            <thead>
+              <tr>
+                <th>Colaborador</th>
+                <th>CPF (LGPD)</th>
+                <th>E-mail Corporativo</th>
+                <th>Credencial / 1º Acesso</th>
+                <th>Status</th>
+                <th style="text-align: right;">Ações de Governança</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${getEmployees().length === 0 ? `
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                    Nenhum colaborador cadastrado. Clique no botão acima para cadastrar o primeiro funcionário com CPF e senha temporária.
+                  </td>
+                </tr>
+              ` : getEmployees().map(emp => {
+                const initials = emp.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+                const isBlocked = emp.status === 'blocked';
+                return `
+                  <tr>
+                    <td>
+                      <div class="employee-profile-cell">
+                        <div class="employee-avatar-circle">${escapeHtml(initials)}</div>
+                        <div>
+                          <div class="employee-name-title">
+                            ${escapeHtml(emp.name)}
+                            ${emp.role === 'admin' ? '<span title="Administrador" style="font-size: 0.75rem;">🛡️</span>' : ''}
+                          </div>
+                          <div class="employee-job-meta">${escapeHtml(emp.jobTitle)} • ${escapeHtml(emp.department)}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="cpf-cell-container" id="cpf-container-${emp.id}">
+                        <span class="cpf-text" id="cpf-text-${emp.id}" data-masked="${escapeHtml(maskCPF(emp.cpf))}" data-raw="${escapeHtml(emp.cpf)}">${escapeHtml(maskCPF(emp.cpf))}</span>
+                        <button type="button" class="btn-toggle-cpf" onclick="window.handleToggleCPFVisibility('${emp.id}')" title="Mostrar/Ocultar CPF completo">
+                          👁️
+                        </button>
+                      </div>
+                    </td>
+                    <td style="color: var(--text-secondary); font-size: 0.82rem;">
+                      ${escapeHtml(emp.email)}
+                    </td>
+                    <td>
+                      ${emp.requirePasswordChange ? `
+                        <div>
+                          <span class="temp-password-badge" title="Senha temporária emitida aguardando primeiro login">
+                            🔑 ${escapeHtml(emp.tempPassword || '***')}
+                          </span>
+                          <div style="font-size: 0.68rem; color: #b45309; margin-top: 2px;">⚠️ Troca obrigatória no 1º acesso</div>
+                        </div>
+                      ` : `
+                        <div>
+                          <span class="badge-status-active" style="font-size: 0.72rem;">
+                            ✓ Senha Pessoal Ativa
+                          </span>
+                          <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">1º acesso concluído</div>
+                        </div>
+                      `}
+                    </td>
+                    <td>
+                      ${isBlocked ? `
+                        <span class="badge-status-blocked">🔴 Bloqueado</span>
+                      ` : `
+                        <span class="badge-status-active">🟢 Ativo</span>
+                      `}
+                    </td>
+                    <td>
+                      <div class="emp-actions-group" style="justify-content: flex-end;">
+                        <button type="button" class="btn btn-outline btn-sm btn-emp-action" onclick="window.handleCopyEmployeeCredentials('${emp.id}')" title="Copiar credenciais prontas para enviar no WhatsApp ou E-mail">
+                          📋 Copiar
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm btn-emp-action" onclick="window.handleResetEmployeePassword('${emp.id}')" title="Gerar nova senha temporária imediata">
+                          🔑 Resetar
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm btn-emp-action" onclick="window.handleToggleEmployeeStatus('${emp.id}')" title="${isBlocked ? 'Desbloquear acesso' : 'Bloquear acesso do funcionário'}">
+                          ${isBlocked ? '🔓 Liberar' : '🛡️ Bloquear'}
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm btn-emp-action" onclick="window.handleDeleteEmployee('${emp.id}')" title="Excluir colaborador" style="color: #dc2626;">
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ` : `
+      <div class="employee-management-section">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 1.5rem;">🔒</span>
+          <div>
+            <h3 style="font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--text-primary);">
+              Gestão de Credenciais Corporativas (Menor Privilégio - Tríade CID)
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+              Como Consultor de Vendas, a emissão e revogação de acessos por CPF é centralizada no <strong>Administrador do Sistema</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    `}
 
     <div class="cid-triad-grid">
       <!-- C: Confidencialidade -->
