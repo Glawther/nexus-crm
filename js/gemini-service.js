@@ -49,7 +49,7 @@ export async function analyzeDealWithGemini(customer) {
  */
 async function callGeminiAPI(customer, apiKey) {
   const prompt = `
-Você é o Chief Revenue Officer (CRO) e especialista em vendas de alto nível do Nexus CRM.
+Você é o Chief Revenue Officer (CRO) e especialista sênior em vendas B2B e CRM.
 Analise a seguinte oportunidade comercial e responda em formato JSON estrito:
 
 DADOS DO CLIENTE:
@@ -73,33 +73,51 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
 }
 `;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.7
+  // Standard current Google Gemini models
+  const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.7
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message = errorData?.error?.message || `HTTP ${response.status}`;
+        throw new Error(message);
       }
-    })
-  });
 
-  if (!response.ok) {
-    throw new Error(`Erro na API do Gemini: HTTP ${response.status}`);
+      const data = await response.json();
+      let textOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!textOutput) {
+        throw new Error("Resposta vazia da IA Gemini.");
+      }
+
+      // Robust Markdown JSON block stripper
+      textOutput = textOutput.trim();
+      if (textOutput.startsWith("```")) {
+        textOutput = textOutput.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+      }
+
+      return JSON.parse(textOutput);
+    } catch (err) {
+      lastError = err;
+      console.warn(`Tentativa com ${model} falhou:`, err.message);
+    }
   }
 
-  const data = await response.json();
-  const textOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!textOutput) {
-    throw new Error("Resposta vazia da API do Gemini.");
-  }
-
-  return JSON.parse(textOutput);
+  throw lastError || new Error("Falha ao comunicar com os modelos Gemini.");
 }
 
 /**

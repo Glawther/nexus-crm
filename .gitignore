@@ -4,5 +4,7 @@
 *.log
 node_modules/
 .firebase/
+data/
+*.db
 .DS_Store
 Thumbs.db
