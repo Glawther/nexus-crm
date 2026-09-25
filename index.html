@@ -21,10 +21,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/design-tokens.css?v=1.4.1">
-  <link rel="stylesheet" href="css/layout.css?v=1.4.1">
-  <link rel="stylesheet" href="css/components.css?v=1.4.1">
-  <link rel="stylesheet" href="css/animations.css?v=1.4.1">
+  <link rel="stylesheet" href="css/design-tokens.css?v=1.4.2">
+  <link rel="stylesheet" href="css/layout.css?v=1.4.2">
+  <link rel="stylesheet" href="css/components.css?v=1.4.2">
+  <link rel="stylesheet" href="css/animations.css?v=1.4.2">
   <!-- Pre-render Theme Application (Doctor+ Dark / Light) -->
   <script>
     (function() {
@@ -143,6 +143,13 @@
         </form>
       </div>
 
+      <div style="margin-top: 1.25rem; text-align: center;">
+        <a href="landing.html" style="font-size: 0.85rem; color: #d9f942; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; padding: 6px 14px; border-radius: 6px; background: rgba(217, 249, 66, 0.08); border: 1px solid rgba(217, 249, 66, 0.25); transition: all 0.2s;">
+          <span>⭐ Conheça os Recursos &amp; Planos Oficiais</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
       <div class="auth-footer-security">
         🔒 Ambiente Corporativo Seguro com Criptografia de Ponta a Ponta<br>
         Conformidade com a LGPD e Governança pela Tríade CID.
@@ -193,6 +200,20 @@
           <a href="#metrics" class="nav-item" data-view="metrics" data-title="Visão Geral e Indicadores de Desempenho">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             <span>Métricas &amp; Relatórios</span>
+          </a>
+        </li>
+        <li>
+          <a href="#team" class="nav-item" data-view="team" data-title="Equipe & Convites">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Equipe & Convites</span>
+            <span class="nav-count" id="nav-count-team">0</span>
+          </a>
+        </li>
+        <li>
+          <a href="#audit" class="nav-item" data-view="audit" data-title="Trilha de Auditoria & Logs">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Auditoria</span>
+            <span class="nav-count" id="nav-count-audit">0</span>
           </a>
         </li>
         <li>
@@ -280,6 +301,22 @@
               </div>
             </button>
 
+            <button type="button" class="dropdown-item" id="btn-menu-webhook">
+              <span class="dropdown-item-icon">⚡</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Webhooks &amp; Captura de Leads</span>
+                <span class="dropdown-item-desc">Meta Ads, Hotmart, Kiwify e Sites</span>
+              </div>
+            </button>
+
+            <a href="landing.html" class="dropdown-item" style="text-decoration: none; color: inherit;">
+              <span class="dropdown-item-icon">🌐</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Página Comercial &amp; Planos</span>
+                <span class="dropdown-item-desc">Conheça os recursos e preços oficiais</span>
+              </div>
+            </a>
+
             <div class="dropdown-divider"></div>
 
             <button type="button" class="dropdown-item" id="btn-menu-shortcuts">
@@ -331,6 +368,26 @@
 
         <!-- BOTÃO DE LEAD NO CANTO DIREITO + STATUS CLOUD -->
         <div class="header-right">
+          <!-- Notification Center Bell -->
+          <div class="notification-bell-wrapper" id="notification-bell-wrapper">
+            <button type="button" class="notification-bell-btn" id="btn-notification-bell" title="Central de Notificações">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+            </button>
+            <div class="notification-dropdown" id="notification-dropdown" style="display: none; background: #181d28 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; opacity: 1 !important; z-index: 99999 !important; box-shadow: 0 20px 48px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.12) !important;">
+              <div class="notification-dropdown-header" style="background: #141722 !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important;">
+                <span style="font-weight: 700; font-size: 0.9rem; color: #ffffff !important;">🔔 Notificações</span>
+                <button type="button" class="btn-link" id="btn-mark-all-read" style="font-size: 0.75rem; color: #3b82f6 !important; cursor: pointer; background: none; border: none; font-weight: 600;">Marcar todas como lidas</button>
+              </div>
+              <div class="notification-list" id="notification-list" style="background: #181d28 !important;">
+                <div class="notification-empty" style="text-align: center; padding: 2rem; color: #94a3b8 !important; font-size: 0.85rem; background: #181d28 !important;">Nenhuma notificação ainda.</div>
+              </div>
+              <div class="notification-dropdown-footer" style="background: #141722 !important; border-top: 1px solid rgba(255,255,255,0.1) !important;">
+                <button type="button" class="btn-link" id="btn-enable-push" style="font-size: 0.75rem; cursor: pointer; background: none; border: none; color: #cbd5e1 !important; font-weight: 500;">🔔 Ativar Notificações Push</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Status de Conexão com Google Cloud -->
           <button type="button" class="connection-pill local" id="connection-status-pill" title="Configurar conexão com o Google Cloud Firestore">
             <span class="pulse-dot"></span>
@@ -622,7 +679,161 @@
         </div>
       </section>
 
-      <!-- VIEW 5: Security & Governance (Tríade CID & RBAC) -->
+      <!-- VIEW 5: Team Management & Invites -->
+      <section class="view-section" id="view-team">
+        <div class="team-management-layout">
+          <!-- Team Stats Cards -->
+          <div class="team-stats-grid" id="team-stats-grid">
+            <div class="team-stat-card">
+              <div class="team-stat-icon" style="background: rgba(59,130,246,0.12); color: #3b82f6;">👥</div>
+              <div class="team-stat-data">
+                <div class="team-stat-value" id="stat-total-members">0</div>
+                <div class="team-stat-label">Membros Ativos</div>
+              </div>
+            </div>
+            <div class="team-stat-card">
+              <div class="team-stat-icon" style="background: rgba(245,158,11,0.12); color: #f59e0b;">📨</div>
+              <div class="team-stat-data">
+                <div class="team-stat-value" id="stat-pending-invites">0</div>
+                <div class="team-stat-label">Convites Pendentes</div>
+              </div>
+            </div>
+            <div class="team-stat-card">
+              <div class="team-stat-icon" style="background: rgba(16,185,129,0.12); color: #10b981;">✅</div>
+              <div class="team-stat-data">
+                <div class="team-stat-value" id="stat-accepted-invites">0</div>
+                <div class="team-stat-label">Convites Aceitos</div>
+              </div>
+            </div>
+            <div class="team-stat-card">
+              <div class="team-stat-icon" style="background: rgba(139,92,246,0.12); color: #8b5cf6;">🛡️</div>
+              <div class="team-stat-data">
+                <div class="team-stat-value" id="stat-admin-count">1</div>
+                <div class="team-stat-label">Administradores</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <!-- Invite Form -->
+            <div class="table-container" style="padding: 1.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                <span style="font-size: 1.2rem;">📨</span>
+                <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">Convidar Membro</h2>
+              </div>
+              <form id="form-team-invite">
+                <div class="form-group" style="margin-bottom: 0.85rem;">
+                  <label for="invite-input-name">Nome Completo *</label>
+                  <input type="text" id="invite-input-name" class="form-input" placeholder="Ex: Maria Silva" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0.85rem;">
+                  <label for="invite-input-email">E-mail Corporativo *</label>
+                  <input type="email" id="invite-input-email" class="form-input" placeholder="maria@empresa.com" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0.85rem;">
+                  <label for="invite-select-role">Papel de Acesso</label>
+                  <select id="invite-select-role" class="form-select">
+                    <option value="employee" selected>💼 Vendedor / Consultor</option>
+                    <option value="manager">📊 Gerente de Vendas</option>
+                    <option value="admin">🛡️ Administrador</option>
+                    <option value="viewer">👁️ Visualizador (Somente Leitura)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="invite-input-message">Mensagem Personalizada (Opcional)</label>
+                  <textarea id="invite-input-message" class="form-input" rows="2" placeholder="Ex: Bem-vindo(a) à equipe!"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                  📨 Enviar Convite
+                </button>
+              </form>
+            </div>
+
+            <!-- Invites List -->
+            <div class="table-container" style="padding: 1.5rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 1.2rem;">📋</span>
+                  <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">Convites Enviados</h2>
+                </div>
+              </div>
+              <div id="invites-list-container" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 400px; overflow-y: auto;">
+                <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+                  Nenhum convite enviado ainda.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 6: Audit Trail & Logs -->
+      <section class="view-section" id="view-audit">
+        <div class="audit-layout">
+          <!-- Audit Stats -->
+          <div class="team-stats-grid" id="audit-stats-grid">
+            <div class="team-stat-card">
+              <div class="team-stat-icon" style="background: rgba(59,130,246,0.12); color: #3b82f6;">📝</div>
+              <div class="team-stat-data">
+                <div class="team-stat-value" id="audit-stat-total">0</div>
+                <div class="team-stat-label">Total de Registros</div>
+              </div>
+            </div>
+            <div class="team-stat-card">
+              <div class="team-stat-icon" style="background: rgba(16,185,129,0.12); color: #10b981;">📅</div>
+              <div class="team-stat-data">
+                <div class="team-stat-value" id="audit-stat-today">0</div>
+                <div class="team-stat-label">Ações Hoje</div>
+              </div>
+            </div>
+            <div class="team-stat-card">
+              <div class="team-stat-icon" style="background: rgba(245,158,11,0.12); color: #f59e0b;">⚠️</div>
+              <div class="team-stat-data">
+                <div class="team-stat-value" id="audit-stat-warnings">0</div>
+                <div class="team-stat-label">Alertas</div>
+              </div>
+            </div>
+            <div class="team-stat-card">
+              <div class="team-stat-icon" style="background: rgba(239,68,68,0.12); color: #ef4444;">🔴</div>
+              <div class="team-stat-data">
+                <div class="team-stat-value" id="audit-stat-critical">0</div>
+                <div class="team-stat-label">Críticos</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audit Log Table -->
+          <div class="table-container" style="padding: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.2rem;">📋</span>
+                <h2 style="font-size: 1.1rem; font-weight: 700;">Trilha de Auditoria Completa</h2>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-export-audit-csv">
+                📊 Exportar Auditoria (CSV)
+              </button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="crm-table" id="audit-table">
+                <thead>
+                  <tr>
+                    <th>Data / Hora</th>
+                    <th>Ação</th>
+                    <th>Severidade</th>
+                    <th>Usuário</th>
+                    <th>Detalhes</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 7: Security & Governance (Tríade CID & RBAC) -->
       <section class="view-section" id="view-security">
         <div id="security-content-container">
           <!-- Populated dynamically by ui-renderer.js -->
@@ -782,46 +993,7 @@
     </form>
   </dialog>
 
-  <!-- ========================================================================
-       MODAL: WhatsApp Templates Selector Dialog
-       ======================================================================== -->
-  <dialog id="whatsapp-dialog" class="crm-dialog" style="max-width: 560px;">
-    <div class="dialog-header">
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <span style="color: #16a34a; font-size: 1.25rem;">💬</span>
-        <div>
-          <h2 class="dialog-title" id="wa-dialog-title">Enviar Mensagem via WhatsApp</h2>
-          <div style="font-size: 0.75rem; color: var(--text-muted);" id="wa-dialog-subtitle"></div>
-        </div>
-      </div>
-      <button type="button" class="action-btn" id="btn-close-wa-dialog" aria-label="Fechar modal">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
 
-    <div class="dialog-body">
-      <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.85rem;">
-        Selecione um modelo de abordagem comercial rápida ou personalize a mensagem:
-      </p>
-
-      <div class="wa-template-grid" id="wa-templates-container">
-        <!-- Rendered dynamically -->
-      </div>
-
-      <div class="form-group">
-        <label for="wa-custom-message">Texto da Mensagem</label>
-        <textarea id="wa-custom-message" class="form-textarea" style="min-height: 90px;"></textarea>
-      </div>
-    </div>
-
-    <div class="dialog-footer">
-      <button type="button" class="btn btn-outline" id="btn-cancel-wa-dialog">Cancelar</button>
-      <button type="button" class="btn btn-primary" id="btn-send-wa-confirm" style="background: #16a34a; border-color: #16a34a;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-        <span>Abrir WhatsApp Web</span>
-      </button>
-    </div>
-  </dialog>
 
   <!-- ========================================================================
        MODAL: Lead Details & Activity Timeline Dialog
@@ -1645,6 +1817,321 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
     </div>
   </dialog>
 
+  <!-- ======================================================================
+       DIALOG: CHECKOUT SEGURO & GATEWAY DE PAGAMENTO (PIX & CARTÃO)
+       ====================================================================== -->
+  <dialog id="checkout-dialog" class="crm-dialog" style="max-width: 720px; width: 95%;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2)); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+          🔒
+        </div>
+        <div>
+          <h2 class="dialog-title" style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem;">
+            Checkout Seguro Nexus CRM
+            <span style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 6px; border-radius: 4px; font-weight: 700;">SSL 256-BIT</span>
+          </h2>
+          <span style="font-size: 0.72rem; color: var(--text-secondary);">Ativação Imediata com Garantia de Satisfação de 7 dias</span>
+        </div>
+      </div>
+      <button type="button" class="dialog-close" id="btn-close-checkout-dialog" aria-label="Fechar">&times;</button>
+    </div>
+
+    <div class="dialog-body" id="checkout-content-container" style="padding: 1.5rem;">
+      <div id="checkout-main-grid" class="checkout-layout-grid" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem;">
+        
+        <!-- Coluna Esquerda: Resumo do Pedido -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem;">Resumo da Assinatura</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <h3 id="checkout-plan-title" style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary); margin: 0;">Nexus Pro</h3>
+              <span id="checkout-plan-tag" style="background: var(--color-primary); color: #000; font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 12px;">MENSAL</span>
+            </div>
+
+            <!-- Cycle Toggle -->
+            <div style="background: rgba(0,0,0,0.15); border-radius: 8px; padding: 4px; display: flex; gap: 4px; margin-bottom: 1rem;">
+              <button type="button" id="btn-cycle-monthly" class="btn btn-sm btn-primary" style="flex: 1; justify-content: center; font-size: 0.75rem; padding: 6px;">Mensal</button>
+              <button type="button" id="btn-cycle-yearly" class="btn btn-sm btn-outline" style="flex: 1; justify-content: center; font-size: 0.75rem; padding: 6px;">Anual (-20%)</button>
+            </div>
+
+            <!-- Features list -->
+            <ul id="checkout-features-list" style="font-size: 0.75rem; color: var(--text-secondary); padding-left: 1.2rem; margin-bottom: 1rem; line-height: 1.6;">
+              <li>Até 5.000 leads ativos</li>
+              <li>10 Vendedores com papéis de acesso</li>
+              <li>150 Análises de IA/mês</li>
+              <li>Whitelabel com logo e cores corporativas</li>
+            </ul>
+          </div>
+
+          <!-- Total Due -->
+          <div style="border-top: 1px dashed var(--border-color); padding-top: 0.85rem; margin-top: 0.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <span style="font-size: 0.8rem; color: var(--text-secondary);">Subtotal:</span>
+              <span id="checkout-subtotal-price" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">R$ 149,00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">Total a Pagar:</span>
+              <span id="checkout-total-price" style="font-size: 1.4rem; font-weight: 800; color: #10b981;">R$ 149,00</span>
+            </div>
+            <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px;">Cobrança recorrente. Cancele quando quiser.</div>
+          </div>
+        </div>
+
+        <!-- Coluna Direita: Métodos de Pagamento -->
+        <div>
+          <!-- Payment Method Tabs -->
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <button type="button" id="tab-pay-pix" class="btn btn-primary" style="flex: 1; justify-content: center; font-size: 0.82rem; gap: 0.4rem;">
+              ⚡ PIX Instantâneo
+            </button>
+            <button type="button" id="tab-pay-card" class="btn btn-outline" style="flex: 1; justify-content: center; font-size: 0.82rem; gap: 0.4rem;">
+              💳 Cartão de Crédito
+            </button>
+          </div>
+
+          <!-- PIX View -->
+          <div id="payment-panel-pix" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.85rem;">
+            <div id="pix-qr-container" style="display: flex; justify-content: center; align-items: center;">
+              <!-- Dynamic QR Code SVG rendered here -->
+            </div>
+            
+            <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.4rem;">
+              <span>⏱️ Código válido por:</span>
+              <strong id="pix-timer" style="color: #ef4444; font-size: 0.85rem;">10:00</strong>
+            </div>
+
+            <div style="width: 100%; display: flex; gap: 0.5rem;">
+              <input type="text" id="pix-copia-cola-input" readonly class="form-input" style="font-size: 0.72rem; font-family: monospace; background: rgba(0,0,0,0.2);">
+              <button type="button" class="btn btn-outline btn-sm" id="btn-copy-pix" style="white-space: nowrap;">
+                📋 Copiar
+              </button>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="btn-simulate-pix-success" style="width: 100%; justify-content: center; padding: 0.75rem; background: linear-gradient(135deg, #10b981, #059669); font-weight: 700;">
+              ⚡ Simular Confirmação do PIX (Aprovação Imediata)
+            </button>
+          </div>
+
+          <!-- Credit Card View -->
+          <div id="payment-panel-card" style="display: none; flex-direction: column; gap: 0.85rem;">
+            <form id="form-checkout-card">
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label for="card-input-number" style="font-size: 0.78rem;">Número do Cartão *</label>
+                <div style="position: relative;">
+                  <input type="text" id="card-input-number" class="form-input" placeholder="4242 4242 4242 4242" required maxlength="19">
+                  <span id="card-brand-badge" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; pointer-events: none;">💳</span>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label for="card-input-name" style="font-size: 0.78rem;">Nome Impresso no Cartão *</label>
+                <input type="text" id="card-input-name" class="form-input" placeholder="Ex: JOAO S SILVA" required>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.85rem;">
+                <div class="form-group">
+                  <label for="card-input-expiry" style="font-size: 0.78rem;">Validade (MM/AA) *</label>
+                  <input type="text" id="card-input-expiry" class="form-input" placeholder="12/28" required maxlength="5">
+                </div>
+                <div class="form-group">
+                  <label for="card-input-cvv" style="font-size: 0.78rem;">CVV *</label>
+                  <input type="text" id="card-input-cvv" class="form-input" placeholder="123" required maxlength="4">
+                </div>
+              </div>
+
+              <button type="button" id="btn-fill-test-card" class="btn btn-outline btn-sm" style="width: 100%; justify-content: center; font-size: 0.72rem; margin-bottom: 0.5rem;">
+                🧪 Preencher Dados de Teste (Stripe Sandbox)
+              </button>
+
+              <button type="submit" class="btn btn-primary" id="btn-submit-card-pay" style="width: 100%; justify-content: center; padding: 0.75rem; font-weight: 700;">
+                🔒 Pagar e Ativar CRM Imediatamente
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Success Receipt View -->
+      <div id="checkout-success-view" style="display: none; flex-direction: column; align-items: center; text-align: center; padding: 1.5rem 1rem;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 2rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 2px solid #10b981;">
+          ✓
+        </div>
+        <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem;">Pagamento Aprovado com Sucesso!</h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 440px; margin-bottom: 1.25rem;">
+          Seu plano <strong id="receipt-plan-name" style="color: var(--color-primary);">Nexus Pro</strong> foi ativado. O comprovante foi registrado na trilha de auditoria do sistema.
+        </p>
+
+        <!-- Receipt Box -->
+        <div style="width: 100%; max-width: 450px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem; text-align: left; margin-bottom: 1.5rem; font-size: 0.8rem;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="color: var(--text-muted);">Comprovante Nº:</span>
+            <strong id="receipt-invoice-id" style="font-family: monospace;">INV-XXXXX</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">Forma de Pagamento:</span>
+            <span id="receipt-payment-method">PIX Instantâneo</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">Valor Pago:</span>
+            <strong id="receipt-amount" style="color: #10b981;">R$ 149,00</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Próxima Renovação:</span>
+            <span id="receipt-valid-until">24/10/2026</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="btn-checkout-finish" style="padding: 0.75rem 2.5rem; font-weight: 700;">
+          🚀 Acessar Meus Recursos Agora
+        </button>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- ======================================================================
+       DIALOG: ASSISTENTE DE VENDAS & ABORDAGEM WHATSAPP (COM IA GEMINI)
+       ====================================================================== -->
+  <dialog id="whatsapp-dialog" class="crm-dialog" style="max-width: 620px; width: 95%;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(37, 211, 102, 0.15); color: #25d366; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+          💬
+        </div>
+        <div>
+          <h2 class="dialog-title" style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem;">
+            Abordagem WhatsApp
+            <span style="font-size: 0.65rem; background: rgba(37, 211, 102, 0.2); color: #25d366; border: 1px solid rgba(37, 211, 102, 0.4); padding: 2px 6px; border-radius: 4px; font-weight: 700;">PROSPECÇÃO 1-CLIQUE</span>
+          </h2>
+          <span style="font-size: 0.72rem; color: var(--text-secondary);">Gerador de Mensagens de Alta Conversão com IA Gemini</span>
+        </div>
+      </div>
+      <button type="button" class="dialog-close" id="btn-close-whatsapp-dialog" aria-label="Fechar">&times;</button>
+    </div>
+
+    <div class="dialog-body" style="padding: 1.25rem;">
+      <!-- Lead Header Info -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Destinatário</div>
+          <div id="wa-lead-name" style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">—</div>
+          <div id="wa-lead-meta" style="font-size: 0.75rem; color: var(--text-secondary);">—</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">WhatsApp / Celular</div>
+          <div id="wa-lead-phone" style="font-weight: 700; font-size: 0.95rem; color: #25d366;">—</div>
+        </div>
+      </div>
+
+      <!-- Quick Templates / AI Buttons -->
+      <div style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Modelos Prontos de Abordagem:</span>
+          <button type="button" id="btn-wa-generate-ai" class="btn btn-sm btn-outline" style="font-size: 0.72rem; gap: 0.35rem; color: #d9f942; border-color: rgba(217, 249, 66, 0.4);">
+            ✨ Gerar com IA Gemini
+          </button>
+        </div>
+        <div id="wa-templates-container" style="display: flex; flex-direction: column; gap: 0.45rem;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Editable Message Area -->
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label for="wa-message-preview" style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 0.35rem;">
+          <span style="font-weight: 600;">Texto da Mensagem:</span>
+          <span id="wa-char-count" style="color: var(--text-muted); font-size: 0.72rem;">0 caracteres</span>
+        </label>
+        <textarea id="wa-message-preview" class="form-input" rows="4" style="resize: vertical; font-size: 0.85rem; line-height: 1.4; width: 100%; box-sizing: border-box;"></textarea>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" id="btn-wa-copy" style="flex: 1; justify-content: center; font-size: 0.85rem;">
+          📋 Copiar Texto
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-wa-send-direct" style="flex: 1.5; justify-content: center; font-size: 0.88rem; background: #25d366; color: #000; border-color: #25d366; font-weight: 700;">
+          💬 Abrir no WhatsApp Web
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ======================================================================
+       DIALOG: WEBHOOKS DE LEADS (META ADS, KIWIFY, HOTMART & SITES)
+       ====================================================================== -->
+  <dialog id="webhook-dialog" class="crm-dialog" style="max-width: 660px; width: 95%;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+          ⚡
+        </div>
+        <div>
+          <h2 class="dialog-title" style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem;">
+            Webhooks &amp; Captura de Leads
+            <span style="font-size: 0.65rem; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 6px; border-radius: 4px; font-weight: 700;">TRÁFEGO AUTOMÁTICO</span>
+          </h2>
+          <span style="font-size: 0.72rem; color: var(--text-secondary);">Receba leads instantaneamente do Facebook/Instagram Ads, Kiwify, Hotmart ou Typeform</span>
+        </div>
+      </div>
+      <button type="button" class="dialog-close" id="btn-close-webhook-dialog" aria-label="Fechar">&times;</button>
+    </div>
+
+    <div class="dialog-body" style="padding: 1.25rem;">
+      <!-- Webhook Endpoint Box -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.35rem; text-transform: uppercase;">
+          URL do Seu Webhook (POST)
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <input type="text" id="webhook-url-input" class="form-input" style="font-family: monospace; font-size: 0.8rem;" readonly>
+          <button type="button" id="btn-copy-webhook-url" class="btn btn-outline btn-sm">📋 Copiar</button>
+        </div>
+      </div>
+
+      <!-- Secret Token Box -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Token Secreto (Header: x-webhook-token)</span>
+          <button type="button" id="btn-regenerate-webhook-token" style="background: none; border: none; color: var(--color-primary); font-size: 0.72rem; cursor: pointer;">🔄 Gerar Novo</button>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <input type="password" id="webhook-token-input" class="form-input" style="font-family: monospace; font-size: 0.8rem;" readonly>
+          <button type="button" id="btn-toggle-show-token" class="btn btn-outline btn-sm">👁️ Ver</button>
+          <button type="button" id="btn-copy-webhook-token" class="btn btn-outline btn-sm">📋 Copiar</button>
+        </div>
+      </div>
+
+      <!-- Payload Sample -->
+      <div style="margin-bottom: 1.25rem;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.35rem;">
+          Exemplo de Payload JSON (Compatível com Make, Zapier e Elementor):
+        </div>
+        <pre style="background: var(--bg-deep); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; font-size: 0.72rem; color: #a5b4fc; overflow-x: auto; margin: 0;">{
+  "nome": "João da Silva",
+  "email": "joao.silva@exemplo.com.br",
+  "whatsapp": "(11) 98765-4321",
+  "empresa": "Silva Distribuidora",
+  "valor": 8500,
+  "origem": "Meta Ads (Instagram)",
+  "mensagem": "Quero orçamento para 5 usuários"
+}</pre>
+      </div>
+
+      <!-- Test Button -->
+      <div style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" id="btn-close-webhook-footer" style="flex: 1; justify-content: center;">
+          Fechar
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-send-test-webhook" style="flex: 2; justify-content: center; font-weight: 700; gap: 0.5rem;">
+          ⚡ Simular Envio de Lead via Webhook
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- Container for Toast Notifications -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
@@ -1652,7 +2139,7 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
   <input type="file" id="backup-file-input" style="display: none;" accept=".json">
 
   <!-- Entry Point Script -->
-  <script type="module" src="js/app.js?v=1.4.1"></script>
+  <script type="module" src="js/app.js?v=1.4.4"></script>
 
 </body>
 </html>

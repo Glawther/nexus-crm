@@ -73,6 +73,65 @@ import {
   setTheme, 
   getSavedTheme 
 } from './theme-manager.js';
+import {
+  logAudit,
+  AUDIT_ACTIONS,
+  AUDIT_SEVERITY,
+  initAuditFirestore,
+  getLocalAuditLogs,
+  getAuditStats,
+  formatAuditAction,
+  formatSeverityBadge,
+  exportAuditToCSV,
+  onAuditLog
+} from './audit-service.js';
+import { getFirestoreDb } from './firebase-service.js';
+import {
+  createInvite,
+  getInvites,
+  getInviteStats,
+  revokeInvite,
+  resendInvite,
+  generateInviteShareText,
+  INVITE_STATUS
+} from './team-invite-service.js';
+import {
+  requestNotificationPermission,
+  getNotificationPermission,
+  sendPushNotification,
+  getInAppNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  onNotificationsChange,
+  getNotificationIcon,
+  scheduleFollowUpReminder,
+  notifyDealEvent,
+  NOTIFICATION_TYPES
+} from './notification-service.js';
+import {
+  PLANS,
+  generatePixQRCodeSVG,
+  generatePixPayload,
+  validateCreditCard,
+  detectCardBrand,
+  processPayment,
+  getInvoices
+} from './billing-service.js';
+import {
+  cleanPhoneNumber,
+  buildWhatsAppLink,
+  generateAIOutreachMessages,
+  recordWhatsAppContact,
+  OUTREACH_TEMPLATES
+} from './whatsapp-service.js';
+import {
+  getWebhookConfig,
+  saveWebhookConfig,
+  regenerateWebhookToken,
+  pollWebhookInbox,
+  sendTestWebhookLead
+} from './webhook-service.js';
 
 let draggedCustomerId = null;
 let activeWhatsAppCustomerId = null;
@@ -107,6 +166,23 @@ async function initApp() {
     applyWhitelabelStyles();
     setupWhitelabelEvents();
     setupBillingEvents();
+    setupCheckoutModalEvents();
+    setupTeamInviteEvents();
+    setupAuditTrailView();
+    setupNotificationCenter();
+    setupWebhookModalEvents();
+
+    // Periodic poll for Webhook incoming leads (every 15s)
+    setInterval(async () => {
+      const res = await pollWebhookInbox();
+      if (res && res.count > 0) {
+        if (crmStore) crmStore.emitChange();
+        showToast(`⚡ ${res.count} novo(s) lead(s) capturado(s) via Webhook!`, 'success');
+      }
+    }, 15000);
+
+    // Log initial login audit event
+    logAudit(AUDIT_ACTIONS.USER_LOGIN, { method: 'session_resume' });
 
     // Setup Auth state
     onAuthChange((user) => {
@@ -144,6 +220,8 @@ async function initApp() {
     // Initialize storage (Firestore or Local)
     const initResult = await storage.init();
     if (initResult.mode === 'firestore') {
+      const db = getFirestoreDb();
+      if (db) initAuditFirestore(db);
       showToast("Conectado em tempo real ao Google Cloud Firestore!", "success");
     } else {
       showToast("Nexus CRM iniciado em modo local de demonstração.", "info");
@@ -241,6 +319,20 @@ function updateNavCounters(state) {
     const pendingCount = (state.tasks || []).filter(t => !t.completed).length;
     tasksCount.textContent = pendingCount;
   }
+
+  // Update team counter
+  const teamCount = document.getElementById('nav-count-team');
+  if (teamCount) {
+    const employees = getEmployees();
+    teamCount.textContent = employees.length;
+  }
+
+  // Update audit counter
+  const auditCount = document.getElementById('nav-count-audit');
+  if (auditCount) {
+    const stats = getAuditStats();
+    auditCount.textContent = stats.todayLogs;
+  }
 }
 
 // ==========================================================================
@@ -290,7 +382,18 @@ window.handleDropCard = async function(event, targetStage) {
   try {
     await storage.updateStage(customerId, targetStage);
     const stageObj = STAGES.find(s => s.id === targetStage);
+    const cust = storage.getCustomer(customerId);
     showToast(`Oportunidade movida para "${stageObj ? stageObj.name : targetStage}".`, "success");
+
+    // Audit & Notification
+    if (targetStage === 'won') {
+      logAudit(AUDIT_ACTIONS.LEAD_WON, { customerId, name: cust?.name, value: cust?.dealValue || 0 });
+      notifyDealEvent(NOTIFICATION_TYPES.DEAL_WON, cust?.name || 'Cliente', cust?.dealValue || 0);
+    } else {
+      logAudit(AUDIT_ACTIONS.LEAD_STAGE_CHANGED, { customerId, name: cust?.name, newStage: targetStage });
+      notifyDealEvent(NOTIFICATION_TYPES.LEAD_UPDATE, cust?.name || 'Cliente');
+    }
+
     setTimeout(() => window.scrollToKanbanStage(targetStage), 100);
   } catch (err) {
     showToast("Erro ao mover estágio: " + err.message, "error");
@@ -312,6 +415,15 @@ window.handleMoveStage = async function(customerId, newStage) {
     await storage.updateStage(customerId, newStage);
     const stageObj = STAGES.find(s => s.id === newStage);
     showToast(`Oportunidade movida para "${stageObj ? stageObj.name : newStage}".`, "success");
+
+    // Audit & Notification
+    if (newStage === 'won') {
+      logAudit(AUDIT_ACTIONS.LEAD_WON, { customerId, name: cust?.name, value: cust?.dealValue || 0 });
+      notifyDealEvent(NOTIFICATION_TYPES.DEAL_WON, cust?.name || 'Cliente', cust?.dealValue || 0);
+    } else {
+      logAudit(AUDIT_ACTIONS.LEAD_STAGE_CHANGED, { customerId, name: cust?.name, newStage });
+    }
+
     setTimeout(() => window.scrollToKanbanStage(newStage), 100);
   } catch (err) {
     // Revert select back to previous stage
@@ -390,7 +502,10 @@ function setupLossReasonEvents() {
       const reasonLabel = reasonObj ? reasonObj.label : reasonVal;
 
       try {
+        const cust = storage.getCustomer(customerId);
         await storage.setLossReason(customerId, reasonLabel, details);
+        logAudit(AUDIT_ACTIONS.LEAD_LOST, { customerId, name: cust?.name, reason: reasonLabel, details }, AUDIT_SEVERITY.INFO);
+        notifyDealEvent(NOTIFICATION_TYPES.DEAL_LOST, cust?.name || 'Cliente', cust?.dealValue || 0);
         activeLossCustomerId = null;
         dialog.close();
         showToast("Oportunidade arquivada como perdida.", "info");
@@ -403,77 +518,162 @@ function setupLossReasonEvents() {
 }
 
 // ==========================================================================
-// WhatsApp Templates Selector Modal
+// WhatsApp Templates & AI Outreach Assistant Modal
 // ==========================================================================
 function setupWhatsAppModalEvents() {
   const dialog = document.getElementById('whatsapp-dialog');
-  const btnClose = document.getElementById('btn-close-wa-dialog');
-  const btnCancel = document.getElementById('btn-cancel-wa-dialog');
-  const btnSendConfirm = document.getElementById('btn-send-wa-confirm');
+  const btnClose = document.getElementById('btn-close-whatsapp-dialog');
+  const leadNameEl = document.getElementById('wa-lead-name');
+  const leadMetaEl = document.getElementById('wa-lead-meta');
+  const leadPhoneEl = document.getElementById('wa-lead-phone');
   const templatesContainer = document.getElementById('wa-templates-container');
-  const messageTextarea = document.getElementById('wa-custom-message');
+  const messagePreview = document.getElementById('wa-message-preview');
+  const charCountEl = document.getElementById('wa-char-count');
+  const btnGenerateAi = document.getElementById('btn-wa-generate-ai');
+  const btnCopy = document.getElementById('btn-wa-copy');
+  const btnSendDirect = document.getElementById('btn-wa-send-direct');
 
   const closeDialog = () => dialog && dialog.close();
   if (btnClose) btnClose.addEventListener('click', closeDialog);
-  if (btnCancel) btnCancel.addEventListener('click', closeDialog);
+
+  if (messagePreview && charCountEl) {
+    messagePreview.addEventListener('input', () => {
+      charCountEl.textContent = `${messagePreview.value.length} caracteres`;
+    });
+  }
 
   window.handleOpenWhatsAppModal = function(customerId) {
     const customer = storage.getCustomer(customerId);
-    if (!customer || !customer.phone) {
-      showToast("Esta oportunidade não possui telefone cadastrado.", "error");
+    if (!customer) {
+      showToast('Oportunidade não encontrada.', 'error');
+      return;
+    }
+    const phone = customer.phone || customer.whatsapp;
+    if (!phone) {
+      showToast('Esta oportunidade não possui número de telefone cadastrado.', 'error');
       return;
     }
 
     activeWhatsAppCustomerId = customerId;
-    document.getElementById('wa-dialog-title').textContent = `WhatsApp para ${customer.name}`;
-    document.getElementById('wa-dialog-subtitle').textContent = `${customer.company || 'Sem empresa'} • ${customer.phone}`;
+    const org = getSavedOrganization();
+    const user = getCurrentUser();
 
-    // Render templates
-    if (templatesContainer) {
-      templatesContainer.innerHTML = WA_TEMPLATES.map((tmpl, idx) => {
-        const text = tmpl.getText(customer);
-        return `
-          <div class="wa-template-card ${idx === 0 ? 'selected' : ''}" data-template-id="${tmpl.id}">
-            <div class="wa-template-title">${tmpl.title}</div>
-            <div class="wa-template-preview">${escapeHtml(text)}</div>
-          </div>
-        `;
-      }).join('');
-
-      // Set initial message
-      messageTextarea.value = WA_TEMPLATES[0].getText(customer);
-
-      // Bind click on template cards
-      const cards = templatesContainer.querySelectorAll('.wa-template-card');
-      cards.forEach(card => {
-        card.addEventListener('click', () => {
-          cards.forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          const tmplId = card.dataset.templateId;
-          const selectedTmpl = WA_TEMPLATES.find(t => t.id === tmplId);
-          if (selectedTmpl) {
-            messageTextarea.value = selectedTmpl.getText(customer);
-          }
-        });
-      });
+    if (leadNameEl) leadNameEl.textContent = customer.name;
+    if (leadMetaEl) {
+      const stageName = (STAGES.find(s => s.id === customer.stage) || {}).name || customer.stage;
+      leadMetaEl.textContent = `${customer.company || 'Pessoa Física'} • Funil: ${stageName}`;
     }
+    if (leadPhoneEl) leadPhoneEl.textContent = phone;
 
-    dialog.showModal();
+    // Render fast templates
+    renderTemplatesList([
+      { tone: '👋 Primeiro Contato', text: OUTREACH_TEMPLATES.first_contact.template(customer, user, org.name) },
+      { tone: '📄 Acompanhamento de Proposta', text: OUTREACH_TEMPLATES.proposal_followup.template(customer, user, org.name) },
+      { tone: '🎯 Quebra de Objeção', text: OUTREACH_TEMPLATES.negotiation.template(customer, user, org.name) },
+      { tone: '❄️ Reativação de Lead', text: OUTREACH_TEMPLATES.cold_lead.template(customer, user, org.name) }
+    ], customer);
+
+    if (dialog) dialog.showModal();
   };
 
-  if (btnSendConfirm) {
-    btnSendConfirm.addEventListener('click', async () => {
+  function renderTemplatesList(items, customer) {
+    if (!templatesContainer) return;
+    templatesContainer.innerHTML = items.map((item, idx) => `
+      <div class="wa-template-card ${idx === 0 ? 'selected' : ''}" style="background: var(--bg-surface-elevated, #1f2533); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.6rem 0.85rem; cursor: pointer; transition: all 150ms ease;" data-idx="${idx}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+          <strong style="font-size: 0.78rem; color: var(--color-primary, #3b82f6);">${escapeHtml(item.tone)}</strong>
+          <span style="font-size: 0.68rem; color: var(--text-muted);">Clique para selecionar</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${escapeHtml(item.text)}
+        </div>
+      </div>
+    `).join('');
+
+    // Set first message
+    if (items[0] && messagePreview) {
+      messagePreview.value = items[0].text;
+      if (charCountEl) charCountEl.textContent = `${items[0].text.length} caracteres`;
+    }
+
+    // Attach click events
+    const cards = templatesContainer.querySelectorAll('.wa-template-card');
+    cards.forEach((card, idx) => {
+      card.addEventListener('click', () => {
+        cards.forEach(c => {
+          c.classList.remove('selected');
+          c.style.borderColor = 'var(--border-color)';
+        });
+        card.classList.add('selected');
+        card.style.borderColor = 'var(--color-primary, #3b82f6)';
+        if (items[idx] && messagePreview) {
+          messagePreview.value = items[idx].text;
+          if (charCountEl) charCountEl.textContent = `${items[idx].text.length} caracteres`;
+        }
+      });
+    });
+  }
+
+  // AI Generator button
+  if (btnGenerateAi) {
+    btnGenerateAi.addEventListener('click', async () => {
       const customer = storage.getCustomer(activeWhatsAppCustomerId);
       if (!customer) return;
 
-      const message = messageTextarea.value.trim();
-      const link = getWhatsAppLink(customer.phone, message);
+      btnGenerateAi.disabled = true;
+      btnGenerateAi.textContent = '✨ Criando abordagens personalizadas com Gemini...';
+
+      const org = getSavedOrganization();
+      const user = getCurrentUser();
+
+      try {
+        const aiOptions = await generateAIOutreachMessages(customer, {
+          companyName: org.name,
+          userName: user?.name
+        });
+
+        renderTemplatesList(aiOptions, customer);
+        showToast('✨ 3 Novas opções de abordagem geradas pela IA!', 'success');
+      } catch (err) {
+        showToast('Erro ao gerar com IA: ' + err.message, 'error');
+      } finally {
+        btnGenerateAi.disabled = false;
+        btnGenerateAi.textContent = '✨ Gerar com IA Gemini';
+      }
+    });
+  }
+
+  // Copy button
+  if (btnCopy && messagePreview) {
+    btnCopy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(messagePreview.value);
+        showToast('📋 Mensagem copiada para a área de transferência!', 'success');
+      } catch {
+        messagePreview.select();
+        document.execCommand('copy');
+        showToast('📋 Mensagem selecionada e copiada!', 'success');
+      }
+    });
+  }
+
+  // Direct send via wa.me
+  if (btnSendDirect && messagePreview) {
+    btnSendDirect.addEventListener('click', async () => {
+      const customer = storage.getCustomer(activeWhatsAppCustomerId);
+      if (!customer) return;
+
+      const phone = customer.phone || customer.whatsapp;
+      const message = messagePreview.value.trim();
+      const link = buildWhatsAppLink(phone, message);
+
       if (!link) {
-        showToast("Número de telefone inválido.", "error");
+        showToast('Número de WhatsApp inválido para envio.', 'error');
         return;
       }
 
-      // Automatically log interaction in customer timeline
+      // Log contact action
+      recordWhatsAppContact(customer, message);
       await storage.addActivity(customer.id, {
         type: 'whatsapp',
         title: 'Mensagem de WhatsApp Enviada',
@@ -482,8 +682,108 @@ function setupWhatsAppModalEvents() {
 
       // Open WhatsApp Web
       window.open(link, '_blank');
-      dialog.close();
-      showToast("Mensagem lançada e registrada no histórico!", "success");
+      closeDialog();
+      showToast('🚀 Conversa aberta no WhatsApp Web e registrada no histórico!', 'success');
+    });
+  }
+}
+
+// ==========================================================================
+// Webhook & Lead Ingestion Modal
+// ==========================================================================
+function setupWebhookModalEvents() {
+  const dialog = document.getElementById('webhook-dialog');
+  const btnOpen = document.getElementById('btn-menu-webhook');
+  const btnClose = document.getElementById('btn-close-webhook-dialog');
+  const btnCloseFooter = document.getElementById('btn-close-webhook-footer');
+
+  const urlInput = document.getElementById('webhook-url-input');
+  const tokenInput = document.getElementById('webhook-token-input');
+  const btnCopyUrl = document.getElementById('btn-copy-webhook-url');
+  const btnCopyToken = document.getElementById('btn-copy-webhook-token');
+  const btnToggleToken = document.getElementById('btn-toggle-show-token');
+  const btnRegenerateToken = document.getElementById('btn-regenerate-webhook-token');
+  const btnSendTest = document.getElementById('btn-send-test-webhook');
+
+  function updateFields() {
+    const cfg = getWebhookConfig();
+    if (urlInput) {
+      urlInput.value = `${window.location.origin}/api/webhook/leads`;
+    }
+    if (tokenInput) {
+      tokenInput.value = cfg.token;
+    }
+  }
+
+  if (btnOpen && dialog) {
+    btnOpen.addEventListener('click', () => {
+      updateFields();
+      const toolsMenu = document.getElementById('header-tools-menu');
+      if (toolsMenu) toolsMenu.style.display = 'none';
+      dialog.showModal();
+    });
+  }
+
+  const closeDialog = () => dialog && dialog.close();
+  if (btnClose) btnClose.addEventListener('click', closeDialog);
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeDialog);
+
+  if (btnCopyUrl && urlInput) {
+    btnCopyUrl.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(urlInput.value);
+        showToast('URL do Webhook copiada!', 'success');
+      } catch {
+        urlInput.select();
+        document.execCommand('copy');
+        showToast('URL do Webhook selecionada/copiada!', 'success');
+      }
+    });
+  }
+
+  if (btnCopyToken && tokenInput) {
+    btnCopyToken.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(tokenInput.value);
+        showToast('Token do Webhook copiado!', 'success');
+      } catch {
+        tokenInput.select();
+        document.execCommand('copy');
+        showToast('Token selecionado/copiado!', 'success');
+      }
+    });
+  }
+
+  if (btnToggleToken && tokenInput) {
+    btnToggleToken.addEventListener('click', () => {
+      const isPassword = tokenInput.type === 'password';
+      tokenInput.type = isPassword ? 'text' : 'password';
+      btnToggleToken.textContent = isPassword ? '🙈 Ocultar' : '👁️ Ver';
+    });
+  }
+
+  if (btnRegenerateToken) {
+    btnRegenerateToken.addEventListener('click', () => {
+      const newToken = regenerateWebhookToken();
+      if (tokenInput) tokenInput.value = newToken;
+      showToast('Novo token gerado e ativado com segurança!', 'info');
+    });
+  }
+
+  if (btnSendTest) {
+    btnSendTest.addEventListener('click', async () => {
+      btnSendTest.disabled = true;
+      btnSendTest.textContent = '⏳ Enviando lead de teste...';
+      try {
+        const res = await sendTestWebhookLead();
+        if (crmStore) crmStore.emitChange();
+        showToast(`🎉 Lead de teste (${res.lead.name}) recebido e adicionado ao funil!`, 'success');
+      } catch (err) {
+        showToast('Erro ao disparar teste: ' + err.message, 'error');
+      } finally {
+        btnSendTest.disabled = false;
+        btnSendTest.textContent = '⚡ Simular Envio de Lead via Webhook';
+      }
     });
   }
 }
@@ -602,6 +902,8 @@ function setupTasksEvents() {
 
       try {
         await storage.addTask(customerId, { title, type, dueDate });
+        const cust = storage.getCustomer(customerId);
+        scheduleFollowUpReminder({ id: customerId, name: cust?.name || 'Cliente' }, dueDate, title);
         taskForm.reset();
         document.getElementById('task-input-date').value = new Date().toISOString().split('T')[0];
         showToast("Tarefa comercial agendada com sucesso!", "success");
@@ -740,6 +1042,16 @@ function setupDialogEvents() {
         await storage.saveCustomer(customerPayload);
         customerDialog.close();
         showToast(id ? "Oportunidade atualizada com sucesso!" : "Novo lead adicionado com sucesso!", "success");
+
+        // Audit & Notification
+        if (id) {
+          logAudit(AUDIT_ACTIONS.LEAD_UPDATED, { customerId: id, name, company, dealValue, stage });
+          notifyDealEvent(NOTIFICATION_TYPES.LEAD_UPDATE, name, dealValue);
+        } else {
+          logAudit(AUDIT_ACTIONS.LEAD_CREATED, { name, company, dealValue, stage });
+          notifyDealEvent(NOTIFICATION_TYPES.LEAD_UPDATE, name, dealValue);
+        }
+
         setTimeout(() => {
           window.scrollToKanbanStage(stage || 'lead');
         }, 150);
@@ -784,12 +1096,15 @@ window.handleOpenEditCustomer = function(customerId) {
 window.handleDeleteCustomer = async function(customerId) {
   if (!isAdmin()) {
     showToast("🔒 Ação bloqueada pela Tríade CID: Apenas Administradores têm permissão para excluir oportunidades definitivamente.", "error");
+    logAudit(AUDIT_ACTIONS.PERMISSION_DENIED, { action: 'delete_customer', customerId }, AUDIT_SEVERITY.WARNING);
     return;
   }
 
   if (!confirm("Deseja realmente excluir esta oportunidade? Esta ação será registrada na trilha de auditoria (Integridade).")) return;
   try {
+    const cust = storage.getCustomer(customerId);
     await storage.deleteCustomer(customerId);
+    logAudit(AUDIT_ACTIONS.LEAD_DELETED, { customerId, name: cust?.name, company: cust?.company }, AUDIT_SEVERITY.WARNING);
     showToast("Oportunidade removida definitivamente do sistema.", "info");
   } catch (err) {
     showToast("Erro ao excluir: " + err.message, "error");
@@ -1126,96 +1441,6 @@ function setupWhitelabelEvents() {
   }
 }
 
-// ==========================================================================
-// Billing & Subscription Manager
-// ==========================================================================
-function setupBillingEvents() {
-  const dialog = document.getElementById('billing-dialog');
-  const btnOpen = document.getElementById('btn-menu-billing');
-  const btnClose = document.getElementById('btn-close-billing-dialog');
-  const btnCloseFooter = document.getElementById('btn-close-billing-dialog-footer');
-
-  const planNameEl = document.getElementById('billing-plan-name');
-  const aiCountEl = document.getElementById('billing-ai-count');
-  const aiBarEl = document.getElementById('billing-ai-bar');
-  const leadsCountEl = document.getElementById('billing-leads-count');
-  const usersCountEl = document.getElementById('billing-users-count');
-
-  if (btnOpen && dialog) {
-    btnOpen.addEventListener('click', () => {
-      const org = getSavedOrganization();
-      const ai = getAiUsageMetrics();
-      const customersCount = storage.getCustomers().length;
-
-      if (planNameEl) {
-        planNameEl.textContent = `${org.planName || 'Nexus Pro'} (${org.planStatus === 'trial' ? 'Período de Teste' : 'Assinatura Ativa'})`;
-      }
-
-      const percent = Math.min(100, Math.round((ai.used / ai.quota) * 100));
-      if (aiCountEl) {
-        aiCountEl.textContent = `${ai.used} / ${ai.quota} chamadas este mês (${percent}%)`;
-      }
-      if (aiBarEl) {
-        aiBarEl.style.width = `${percent}%`;
-        if (percent > 90) {
-          aiBarEl.style.background = 'linear-gradient(90deg, #f59e0b, #ef4444)';
-        } else {
-          aiBarEl.style.background = 'linear-gradient(90deg, #3b82f6, #10b981)';
-        }
-      }
-
-      if (leadsCountEl) {
-        leadsCountEl.textContent = `${customersCount} / ${(org.maxLeads || 5000).toLocaleString('pt-BR')}`;
-      }
-
-      if (usersCountEl) {
-        usersCountEl.textContent = `2 / ${org.maxUsers || 10}`;
-      }
-
-      // Close tools dropdown if open
-      const toolsMenu = document.getElementById('header-tools-menu');
-      if (toolsMenu) toolsMenu.style.display = 'none';
-
-      dialog.showModal();
-    });
-  }
-
-  const closeDialog = () => dialog && dialog.close();
-  if (btnClose) btnClose.addEventListener('click', closeDialog);
-  if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeDialog);
-
-  // Plan selection buttons
-  const planButtons = document.querySelectorAll('.btn-plan-select');
-  planButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const plan = btn.getAttribute('data-plan');
-      const org = getSavedOrganization();
-      if (plan === 'starter') {
-        org.plan = 'starter';
-        org.planName = 'Nexus Starter';
-        org.aiQuotaMonth = 30;
-        org.maxLeads = 500;
-        org.maxUsers = 2;
-      } else if (plan === 'pro') {
-        org.plan = 'pro';
-        org.planName = 'Nexus Pro';
-        org.aiQuotaMonth = 150;
-        org.maxLeads = 5000;
-        org.maxUsers = 10;
-      } else if (plan === 'enterprise') {
-        org.plan = 'enterprise';
-        org.planName = 'Nexus Enterprise';
-        org.aiQuotaMonth = 9999;
-        org.maxLeads = 50000;
-        org.maxUsers = 50;
-      }
-      saveOrganization(org);
-      showToast(`Plano alterado para ${org.planName}!`, "success");
-      dialog.close();
-    });
-  });
-}
-
 
 // ==========================================================================
 // Export CSV Events
@@ -1227,6 +1452,7 @@ function setupExportEvents() {
       const customers = crmStore.getState().filteredCustomers;
       try {
         exportCustomersToCSV(customers);
+        logAudit(AUDIT_ACTIONS.DATA_EXPORTED, { type: 'customers_csv', count: customers.length });
         showToast("Planilha CSV exportada com sucesso!", "success");
       } catch (err) {
         showToast("Erro ao exportar: " + err.message, "error");
@@ -1252,6 +1478,7 @@ function setupBackupEvents() {
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+      logAudit(AUDIT_ACTIONS.BACKUP_CREATED, { totalCustomers: snapshot?.customers?.length || 0 });
       showToast("Snapshot de contingência exportado com sucesso!", "success");
     } catch (err) {
       showToast("Erro ao exportar backup: " + err.message, "error");
@@ -1261,6 +1488,7 @@ function setupBackupEvents() {
   window.handleTriggerRestoreBackup = function() {
     if (!isAdmin()) {
       showToast("🔒 Acesso negado: Apenas Administradores podem restaurar snapshots de backup (Tríade CID: Disponibilidade).", "error");
+      logAudit(AUDIT_ACTIONS.PERMISSION_DENIED, { action: 'restore_backup' }, AUDIT_SEVERITY.WARNING);
       return;
     }
     if (backupFileInput) backupFileInput.click();
@@ -1276,6 +1504,7 @@ function setupBackupEvents() {
         try {
           const data = JSON.parse(event.target.result);
           await storage.restoreBackupSnapshot(data);
+          logAudit(AUDIT_ACTIONS.BACKUP_RESTORED, { restoredCustomers: data?.customers?.length || 0 }, AUDIT_SEVERITY.WARNING);
           showToast("Banco restaurado com sucesso a partir do snapshot!", "success");
         } catch (err) {
           showToast("Falha na restauração do backup: " + err.message, "error");
@@ -1299,6 +1528,7 @@ window.handleToggleRole = function() {
   const current = getCurrentRole();
   const newRole = current === USER_ROLES.ADMIN ? USER_ROLES.EMPLOYEE : USER_ROLES.ADMIN;
   setUserRole(newRole);
+  logAudit(AUDIT_ACTIONS.ROLE_SWITCHED, { fromRole: current, toRole: newRole });
   const roleLabel = newRole === USER_ROLES.ADMIN ? 'Administrador (Acesso Total 🛡️)' : 'Funcionário / Consultor (Acesso Restrito 💼)';
   showToast(`Perfil alternado para: ${roleLabel}`, "info");
 };
@@ -1529,6 +1759,7 @@ function setupAuthPortalEvents() {
   };
 
   window.handleLogoutToPortal = function() {
+    logAudit(AUDIT_ACTIONS.USER_LOGOUT, { reason: 'user_action' });
     logoutToPortal();
     window.showAuthPortal();
     showToast("Sessão finalizada com sucesso. Tela bloqueada.", "info");
@@ -1563,6 +1794,7 @@ function setupAuthPortalEvents() {
   if (btnQuickAdmin) {
     btnQuickAdmin.addEventListener('click', () => {
       loginAsDemoRole(USER_ROLES.ADMIN);
+      logAudit(AUDIT_ACTIONS.USER_LOGIN, { method: 'quick_demo', role: 'admin' });
       window.hideAuthPortal();
       showToast("Conectado como Administrador do Sistema 🛡️ (Acesso Total 360°)", "success");
     });
@@ -1571,6 +1803,7 @@ function setupAuthPortalEvents() {
   if (btnQuickEmployee) {
     btnQuickEmployee.addEventListener('click', () => {
       loginAsDemoRole(USER_ROLES.EMPLOYEE);
+      logAudit(AUDIT_ACTIONS.USER_LOGIN, { method: 'quick_demo', role: 'employee' });
       window.hideAuthPortal();
       showToast("Conectado como Lucas Mendes 💼 (Consultor Comercial)", "success");
     });
@@ -1629,6 +1862,7 @@ function setupAuthPortalEvents() {
           currentUserObj.cpf = emp.cpf;
         }
         crmStore.addAuditLog('Login de Colaborador', `Colaborador "${emp.name}" autenticado com sucesso (CPF: ${maskCPF(emp.cpf)}).`);
+        logAudit(AUDIT_ACTIONS.USER_LOGIN, { method: 'employee_credentials', employeeId: emp.id, name: emp.name, role: emp.role });
         window.hideAuthPortal();
         showToast(`Bem-vindo(a) ao Nexus CRM, ${emp.name}!`, "success");
         return;
@@ -1641,6 +1875,7 @@ function setupAuthPortalEvents() {
 
       // Fallback for demo logins / email logins
       loginWithEmail(loginValue, password, role);
+      logAudit(AUDIT_ACTIONS.USER_LOGIN, { method: 'email_password', email: loginValue, role });
       window.hideAuthPortal();
       const roleLabel = role === 'admin' ? 'Administrador 🛡️' : 'Funcionário 💼';
       showToast(`Bem-vindo(a) ao Nexus CRM! Perfil ativo: ${roleLabel}`, "success");
@@ -1664,6 +1899,7 @@ function setupAuthPortalEvents() {
 
       registerUser(name, email, password, role, company);
       crmStore.addAuditLog('Novo Usuário Cadastrado', `Usuário "${name}" (${email}) registrado como ${role === 'admin' ? 'Administrador' : 'Funcionário'}.`);
+      logAudit(AUDIT_ACTIONS.USER_REGISTERED, { name, email, role, company });
       window.hideAuthPortal();
       showToast(`Conta criada com sucesso! Bem-vindo(a), ${name}!`, "success");
     });
@@ -1675,6 +1911,7 @@ function setupAuthPortalEvents() {
       try {
         const user = await signInWithGoogle();
         setSessionActive(true);
+        logAudit(AUDIT_ACTIONS.USER_LOGIN, { method: 'google_oauth', email: user.email });
         window.hideAuthPortal();
         showToast(`Bem-vindo(a), ${user.displayName || 'Usuário Google'}!`, "success");
       } catch (err) {
@@ -2358,6 +2595,12 @@ function setupEmployeeManagementEvents() {
       }
 
       dialog.close();
+      logAudit(AUDIT_ACTIONS.EMPLOYEE_CREATED, {
+        empId: result.employee.id,
+        name: result.employee.name,
+        role: result.employee.role,
+        cpf: maskCPF(result.employee.cpf)
+      });
       const shareText = generateCredentialsShareText(result.employee);
       try {
         navigator.clipboard.writeText(shareText);
@@ -2448,6 +2691,7 @@ function setupEmployeeManagementEvents() {
       return;
     }
 
+    logAudit(AUDIT_ACTIONS.EMPLOYEE_PASSWORD_RESET, { empId, name: emp.name }, AUDIT_SEVERITY.WARNING);
     const shareText = generateCredentialsShareText(res.employee);
     navigator.clipboard.writeText(shareText);
     showToast(`🔑 Nova senha emitida: ${res.tempPassword}. Credenciais copiadas!`, 'success');
@@ -2470,6 +2714,7 @@ function setupEmployeeManagementEvents() {
       return;
     }
 
+    logAudit(AUDIT_ACTIONS.EMPLOYEE_STATUS_CHANGED, { empId, name: emp.name, status: res.status }, AUDIT_SEVERITY.WARNING);
     showToast(`Status de ${emp.name}: ${res.status === 'active' ? 'ATIVO 🟢' : 'BLOQUEADO 🔴'}`, 'info');
     renderSecurityView(crmStore.getState());
   };
@@ -2489,11 +2734,750 @@ function setupEmployeeManagementEvents() {
       return;
     }
 
+    logAudit(AUDIT_ACTIONS.EMPLOYEE_DELETED, { empId, name: emp.name }, AUDIT_SEVERITY.CRITICAL);
     showToast(`Colaborador ${emp.name} excluído da base.`, 'info');
     renderSecurityView(crmStore.getState());
   };
 }
 
+// ==========================================================================
+// Billing & Subscription Events
+// ==========================================================================
+function setupBillingEvents() {
+  const dialog = document.getElementById('billing-dialog');
+  const btnOpen = document.getElementById('btn-menu-billing');
+  const btnClose = document.getElementById('btn-close-billing-dialog');
+  const btnCloseFooter = document.getElementById('btn-close-billing-dialog-footer');
 
+  function refreshBillingData() {
+    const org = getSavedOrganization();
+    const metrics = getAiUsageMetrics();
+    const employees = getEmployees();
+    const state = crmStore?.getState();
+    const totalLeads = state?.allCustomers?.length || 0;
 
+    // Plan name & status
+    const planNames = { starter: 'Starter', pro: 'Nexus Pro', enterprise: 'Enterprise' };
+    const planNameEl = document.getElementById('billing-plan-name');
+    const planBadgeEl = document.getElementById('billing-plan-badge');
+    if (planNameEl) {
+      const statusLabel = org.planStatus === 'trial' ? ' (Período de Teste)' : '';
+      planNameEl.textContent = (planNames[org.plan] || 'Nexus Pro') + statusLabel;
+    }
+    if (planBadgeEl) {
+      if (org.planStatus === 'trial') {
+        planBadgeEl.textContent = `ATIVO • ${org.trialDaysLeft || 14} DIAS RESTANTES`;
+        planBadgeEl.style.background = '#f59e0b';
+      } else {
+        planBadgeEl.textContent = 'ATIVO';
+        planBadgeEl.style.background = '#10b981';
+      }
+    }
 
+    // AI Usage
+    const aiCount = document.getElementById('billing-ai-count');
+    const aiBar = document.getElementById('billing-ai-bar');
+    const used = metrics.used || 0;
+    const quota = metrics.quota || 150;
+    const pct = Math.min(100, Math.round((used / quota) * 100));
+    if (aiCount) aiCount.textContent = `${used} / ${quota} chamadas este mês (${pct}%)`;
+    if (aiBar) aiBar.style.width = `${pct}%`;
+
+    // Resource counts
+    const leadsCount = document.getElementById('billing-leads-count');
+    const usersCount = document.getElementById('billing-users-count');
+    if (leadsCount) leadsCount.textContent = `${totalLeads} / ${(org.maxLeads || 5000).toLocaleString('pt-BR')}`;
+    if (usersCount) usersCount.textContent = `${employees.length + 1} / ${org.maxUsers || 10}`;
+
+    // Highlight current plan button
+    const planBtns = document.querySelectorAll('.btn-plan-select');
+    planBtns.forEach(btn => {
+      const plan = btn.dataset.plan;
+      if (plan === org.plan) {
+        btn.textContent = 'Plano Atual';
+        btn.classList.remove('btn-outline');
+        btn.classList.add('btn-primary');
+        btn.disabled = true;
+      } else {
+        btn.textContent = `Escolher ${planNames[plan] || plan}`;
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+        btn.disabled = false;
+      }
+    });
+  }
+
+  if (btnOpen && dialog) {
+    btnOpen.addEventListener('click', () => {
+      const toolsMenu = document.getElementById('header-tools-menu');
+      if (toolsMenu) toolsMenu.style.display = 'none';
+      refreshBillingData();
+      dialog.showModal();
+    });
+  }
+
+  if (btnClose) btnClose.addEventListener('click', () => dialog?.close());
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', () => dialog?.close());
+
+  // Plan selection buttons -> opens checkout modal
+  document.querySelectorAll('.btn-plan-select').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const plan = btn.dataset.plan;
+      if (!plan) return;
+      if (window.openCheckout) {
+        window.openCheckout(plan);
+      }
+    });
+  });
+}
+
+// ==========================================================================
+// Checkout & Payment Gateway Events (PIX Instantâneo & Cartão de Crédito)
+// ==========================================================================
+function setupCheckoutModalEvents() {
+  const dialog = document.getElementById('checkout-dialog');
+  const btnClose = document.getElementById('btn-close-checkout-dialog');
+  const mainGrid = document.getElementById('checkout-main-grid');
+  const successView = document.getElementById('checkout-success-view');
+
+  const planTitle = document.getElementById('checkout-plan-title');
+  const planTag = document.getElementById('checkout-plan-tag');
+  const subtotalPrice = document.getElementById('checkout-subtotal-price');
+  const totalPrice = document.getElementById('checkout-total-price');
+  const featuresList = document.getElementById('checkout-features-list');
+
+  const btnCycleMonthly = document.getElementById('btn-cycle-monthly');
+  const btnCycleYearly = document.getElementById('btn-cycle-yearly');
+
+  const tabPix = document.getElementById('tab-pay-pix');
+  const tabCard = document.getElementById('tab-pay-card');
+  const panelPix = document.getElementById('payment-panel-pix');
+  const panelCard = document.getElementById('payment-panel-card');
+
+  const qrContainer = document.getElementById('pix-qr-container');
+  const pixCopiaCola = document.getElementById('pix-copia-cola-input');
+  const btnCopyPix = document.getElementById('btn-copy-pix');
+  const pixTimerEl = document.getElementById('pix-timer');
+  const btnSimulatePix = document.getElementById('btn-simulate-pix-success');
+
+  const formCard = document.getElementById('form-checkout-card');
+  const cardInputNumber = document.getElementById('card-input-number');
+  const cardInputName = document.getElementById('card-input-name');
+  const cardInputExpiry = document.getElementById('card-input-expiry');
+  const cardInputCvv = document.getElementById('card-input-cvv');
+  const cardBrandBadge = document.getElementById('card-brand-badge');
+  const btnFillTestCard = document.getElementById('btn-fill-test-card');
+  const btnSubmitCard = document.getElementById('btn-submit-card-pay');
+
+  const receiptPlanName = document.getElementById('receipt-plan-name');
+  const receiptInvoiceId = document.getElementById('receipt-invoice-id');
+  const receiptMethod = document.getElementById('receipt-payment-method');
+  const receiptAmount = document.getElementById('receipt-amount');
+  const receiptValidUntil = document.getElementById('receipt-valid-until');
+  const btnFinish = document.getElementById('btn-checkout-finish');
+
+  let selectedPlan = 'pro';
+  let selectedCycle = 'monthly';
+  let currentMethod = 'pix';
+  let pixInterval = null;
+
+  function updateCheckoutUI() {
+    const plan = PLANS[selectedPlan] || PLANS.pro;
+    const price = selectedCycle === 'yearly' ? plan.priceYearly : plan.priceMonthly;
+    const formattedPrice = `R$ ${price.toFixed(2).replace('.', ',')}`;
+
+    if (planTitle) planTitle.textContent = plan.name;
+    if (planTag) planTag.textContent = selectedCycle === 'yearly' ? 'ANUAL (-20%)' : 'MENSAL';
+    if (subtotalPrice) subtotalPrice.textContent = formattedPrice;
+    if (totalPrice) totalPrice.textContent = formattedPrice;
+
+    if (featuresList) {
+      featuresList.innerHTML = plan.features.map(f => `<li>${f}</li>`).join('');
+    }
+
+    if (btnCycleMonthly && btnCycleYearly) {
+      btnCycleMonthly.className = selectedCycle === 'monthly' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline';
+      btnCycleYearly.className = selectedCycle === 'yearly' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline';
+    }
+
+    // Generate dynamic PIX
+    const pixPayload = generatePixPayload(selectedPlan, selectedCycle);
+    if (pixCopiaCola) pixCopiaCola.value = pixPayload;
+    if (qrContainer) {
+      qrContainer.innerHTML = generatePixQRCodeSVG(pixPayload);
+    }
+
+    // Reset timer
+    startPixTimer();
+
+    // Reset views
+    if (mainGrid) mainGrid.style.display = 'grid';
+    if (successView) successView.style.display = 'none';
+
+    // Update submit button text
+    if (btnSubmitCard) {
+      btnSubmitCard.textContent = `🔒 Pagar ${formattedPrice} e Ativar CRM`;
+    }
+  }
+
+  function startPixTimer() {
+    if (pixInterval) clearInterval(pixInterval);
+    let totalSeconds = 600;
+    function tick() {
+      const min = Math.floor(totalSeconds / 60);
+      const sec = totalSeconds % 60;
+      if (pixTimerEl) {
+        pixTimerEl.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+      }
+      if (totalSeconds <= 0) {
+        clearInterval(pixInterval);
+        if (pixTimerEl) pixTimerEl.textContent = 'Expirado';
+      }
+      totalSeconds--;
+    }
+    tick();
+    pixInterval = setInterval(tick, 1000);
+  }
+
+  window.openCheckout = function(planId = 'pro') {
+    selectedPlan = planId;
+    updateCheckoutUI();
+    const billingDialog = document.getElementById('billing-dialog');
+    if (billingDialog && billingDialog.open) billingDialog.close();
+    if (dialog) dialog.showModal();
+  };
+
+  if (btnClose) {
+    btnClose.addEventListener('click', () => {
+      if (pixInterval) clearInterval(pixInterval);
+      dialog?.close();
+    });
+  }
+
+  // Cycle toggle
+  if (btnCycleMonthly) {
+    btnCycleMonthly.addEventListener('click', () => {
+      selectedCycle = 'monthly';
+      updateCheckoutUI();
+    });
+  }
+
+  if (btnCycleYearly) {
+    btnCycleYearly.addEventListener('click', () => {
+      selectedCycle = 'yearly';
+      updateCheckoutUI();
+    });
+  }
+
+  // Tab switching
+  if (tabPix && tabCard) {
+    tabPix.addEventListener('click', () => {
+      currentMethod = 'pix';
+      tabPix.className = 'btn btn-primary';
+      tabCard.className = 'btn btn-outline';
+      if (panelPix) panelPix.style.display = 'flex';
+      if (panelCard) panelCard.style.display = 'none';
+    });
+
+    tabCard.addEventListener('click', () => {
+      currentMethod = 'credit_card';
+      tabCard.className = 'btn btn-primary';
+      tabPix.className = 'btn btn-outline';
+      if (panelPix) panelPix.style.display = 'none';
+      if (panelCard) panelCard.style.display = 'flex';
+    });
+  }
+
+  // Copy PIX
+  if (btnCopyPix && pixCopiaCola) {
+    btnCopyPix.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pixCopiaCola.value);
+        showToast('Código PIX Copia e Cola copiado!', 'success');
+      } catch {
+        pixCopiaCola.select();
+        document.execCommand('copy');
+        showToast('Código PIX selecionado/copiado!', 'success');
+      }
+    });
+  }
+
+  // Card input mask & Brand detection
+  if (cardInputNumber) {
+    cardInputNumber.addEventListener('input', () => {
+      let val = cardInputNumber.value.replace(/\D/g, '');
+      val = val.substring(0, 16);
+      const parts = val.match(/.{1,4}/g);
+      cardInputNumber.value = parts ? parts.join(' ') : '';
+      if (cardBrandBadge) {
+        cardBrandBadge.textContent = detectCardBrand(val);
+      }
+    });
+  }
+
+  if (cardInputExpiry) {
+    cardInputExpiry.addEventListener('input', () => {
+      let val = cardInputExpiry.value.replace(/\D/g, '');
+      if (val.length >= 2) {
+        val = val.substring(0, 2) + '/' + val.substring(2, 4);
+      }
+      cardInputExpiry.value = val.substring(0, 5);
+    });
+  }
+
+  // Quick fill sandbox card
+  if (btnFillTestCard) {
+    btnFillTestCard.addEventListener('click', () => {
+      if (cardInputNumber) cardInputNumber.value = '4242 4242 4242 4242';
+      if (cardInputName) cardInputName.value = 'CARLOS A SILVA';
+      if (cardInputExpiry) cardInputExpiry.value = '12/28';
+      if (cardInputCvv) cardInputCvv.value = '888';
+      if (cardBrandBadge) cardBrandBadge.textContent = 'Visa 💳';
+      showToast('Dados de teste do Stripe carregados!', 'info');
+    });
+  }
+
+  // Process PIX simulation
+  if (btnSimulatePix) {
+    btnSimulatePix.addEventListener('click', async () => {
+      btnSimulatePix.disabled = true;
+      btnSimulatePix.textContent = '⏳ Confirmando PIX com o Banco Central...';
+
+      const user = getCurrentUser();
+      const res = await processPayment({
+        planId: selectedPlan,
+        cycle: selectedCycle,
+        method: 'pix',
+        customerInfo: { name: user?.name, email: user?.email }
+      });
+
+      btnSimulatePix.disabled = false;
+      btnSimulatePix.textContent = '⚡ Simular Confirmação do PIX (Aprovação Imediata)';
+
+      if (res.success) {
+        displayReceipt(res.invoice);
+      } else {
+        showToast(res.error || 'Erro no processamento do Pix.', 'error');
+      }
+    });
+  }
+
+  // Process Card payment
+  if (formCard) {
+    formCard.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (btnSubmitCard) {
+        btnSubmitCard.disabled = true;
+        btnSubmitCard.textContent = '⏳ Processando com a operadora...';
+      }
+
+      const user = getCurrentUser();
+      const res = await processPayment({
+        planId: selectedPlan,
+        cycle: selectedCycle,
+        method: 'credit_card',
+        cardData: {
+          number: cardInputNumber.value,
+          name: cardInputName.value,
+          expiry: cardInputExpiry.value,
+          cvv: cardInputCvv.value
+        },
+        customerInfo: { name: user?.name, email: user?.email }
+      });
+
+      if (btnSubmitCard) {
+        btnSubmitCard.disabled = false;
+        const plan = PLANS[selectedPlan] || PLANS.pro;
+        const price = selectedCycle === 'yearly' ? plan.priceYearly : plan.priceMonthly;
+        btnSubmitCard.textContent = `🔒 Pagar R$ ${price.toFixed(2).replace('.', ',')} e Ativar CRM`;
+      }
+
+      if (res.success) {
+        displayReceipt(res.invoice);
+      } else {
+        showToast(res.error || 'Cartão recusado pela operadora.', 'error');
+      }
+    });
+  }
+
+  function displayReceipt(inv) {
+    if (pixInterval) clearInterval(pixInterval);
+    if (mainGrid) mainGrid.style.display = 'none';
+    if (successView) successView.style.display = 'flex';
+
+    if (receiptPlanName) receiptPlanName.textContent = inv.planName;
+    if (receiptInvoiceId) receiptInvoiceId.textContent = inv.id;
+    if (receiptMethod) receiptMethod.textContent = inv.method + (inv.cardLast4 ? ` (•••• ${inv.cardLast4})` : '');
+    if (receiptAmount) receiptAmount.textContent = `R$ ${inv.amount.toFixed(2).replace('.', ',')}`;
+    if (receiptValidUntil) {
+      receiptValidUntil.textContent = new Date(inv.validUntil).toLocaleDateString('pt-BR');
+    }
+
+    showToast(`🎉 Parabéns! Plano ${inv.planName} ativado com sucesso!`, 'success');
+  }
+
+  if (btnFinish) {
+    btnFinish.addEventListener('click', () => {
+      dialog?.close();
+      if (crmStore) crmStore.emitChange();
+    });
+  }
+
+  // Handle checkout deep-linking via URL hash from Landing Page
+  function handleCheckoutHash() {
+    const hash = window.location.hash;
+    if (hash === '#checkout-starter') {
+      window.openCheckout('starter');
+    } else if (hash === '#checkout-pro' || hash === '#checkout') {
+      window.openCheckout('pro');
+    } else if (hash === '#checkout-enterprise') {
+      window.openCheckout('enterprise');
+    }
+  }
+  window.addEventListener('hashchange', handleCheckoutHash);
+  setTimeout(handleCheckoutHash, 200);
+  setTimeout(handleCheckoutHash, 800);
+  setTimeout(handleCheckoutHash, 1800);
+}
+
+// ==========================================================================
+// Team Invite System Events
+// ==========================================================================
+function setupTeamInviteEvents() {
+  const form = document.getElementById('form-team-invite');
+
+  function renderInvitesList() {
+    const container = document.getElementById('invites-list-container');
+    if (!container) return;
+
+    const invites = getInvites();
+    const stats = getInviteStats();
+    const employees = getEmployees();
+
+    // Update stats
+    const statMembers = document.getElementById('stat-total-members');
+    const statPending = document.getElementById('stat-pending-invites');
+    const statAccepted = document.getElementById('stat-accepted-invites');
+    const statAdmin = document.getElementById('stat-admin-count');
+
+    if (statMembers) statMembers.textContent = employees.filter(e => e.status === 'active').length + 1;
+    if (statPending) statPending.textContent = stats.pending;
+    if (statAccepted) statAccepted.textContent = stats.accepted;
+    if (statAdmin) statAdmin.textContent = employees.filter(e => e.role === 'admin').length + 1;
+
+    if (invites.length === 0) {
+      container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+        Nenhum convite enviado ainda. Use o formulário ao lado para convidar membros.
+      </div>`;
+      return;
+    }
+
+    const roleLabels = {
+      admin: '🛡️ Admin', manager: '📊 Gerente', employee: '💼 Vendedor', viewer: '👁️ Viewer'
+    };
+    const statusLabels = {
+      pending: 'Pendente', accepted: 'Aceito', expired: 'Expirado', revoked: 'Revogado'
+    };
+
+    container.innerHTML = invites.map(inv => {
+      const dateStr = new Date(inv.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      return `
+        <div class="invite-card">
+          <div class="invite-card-info">
+            <div class="invite-card-name">${escapeHtml(inv.name)}</div>
+            <div class="invite-card-email">${escapeHtml(inv.email)} • ${roleLabels[inv.role] || inv.role}</div>
+            <div class="invite-card-meta">Enviado em ${dateStr} por ${escapeHtml(inv.invitedBy?.name || 'Admin')}</div>
+          </div>
+          <span class="invite-status-badge ${inv.status}">${statusLabels[inv.status] || inv.status}</span>
+          <div class="invite-card-actions">
+            ${inv.status === 'pending' ? `
+              <button type="button" class="btn btn-outline btn-sm" onclick="window.handleCopyInvite('${inv.id}')" title="Copiar credenciais">📋</button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="window.handleRevokeInvite('${inv.id}')" title="Revogar">❌</button>
+            ` : inv.status === 'expired' || inv.status === 'revoked' ? `
+              <button type="button" class="btn btn-outline btn-sm" onclick="window.handleResendInvite('${inv.id}')" title="Reenviar">🔄</button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('invite-input-name')?.value?.trim();
+      const email = document.getElementById('invite-input-email')?.value?.trim();
+      const role = document.getElementById('invite-select-role')?.value || 'employee';
+      const message = document.getElementById('invite-input-message')?.value?.trim() || '';
+
+      const result = createInvite({ name, email, role, message });
+
+      if (!result.success) {
+        showToast(result.error, 'error');
+        return;
+      }
+
+      // Copy invite text to clipboard
+      const shareText = generateInviteShareText(result.invite);
+      navigator.clipboard.writeText(shareText).catch(() => {});
+
+      showToast(`📨 Convite enviado para ${name}! Credenciais copiadas para a área de transferência.`, 'success');
+      sendPushNotification(`📨 Novo convite enviado`, {
+        body: `${name} (${email}) foi convidado como ${role}`,
+        data: { type: NOTIFICATION_TYPES.TEAM_INVITE }
+      });
+
+      form.reset();
+      renderInvitesList();
+    });
+  }
+
+  // Global handlers for invite actions
+  window.handleCopyInvite = function(inviteId) {
+    const invites = getInvites();
+    const inv = invites.find(i => i.id === inviteId);
+    if (!inv) return;
+    const shareText = generateInviteShareText(inv);
+    navigator.clipboard.writeText(shareText);
+    showToast(`📋 Credenciais de ${inv.name} copiadas! Envie via WhatsApp ou E-mail.`, 'success');
+  };
+
+  window.handleRevokeInvite = function(inviteId) {
+    if (!confirm('Tem certeza que deseja revogar este convite?')) return;
+    const result = revokeInvite(inviteId);
+    if (result.success) {
+      showToast('Convite revogado com sucesso.', 'info');
+      renderInvitesList();
+    } else {
+      showToast(result.error, 'error');
+    }
+  };
+
+  window.handleResendInvite = function(inviteId) {
+    const result = resendInvite(inviteId);
+    if (result.success) {
+      const shareText = generateInviteShareText(result.invite);
+      navigator.clipboard.writeText(shareText).catch(() => {});
+      showToast(`🔄 Convite reenviado! Novas credenciais copiadas.`, 'success');
+      renderInvitesList();
+    } else {
+      showToast(result.error, 'error');
+    }
+  };
+
+  // Initial render
+  renderInvitesList();
+
+  // Re-render when employees change
+  onEmployeesChange(renderInvitesList);
+}
+
+// ==========================================================================
+// Audit Trail View & Rendering
+// ==========================================================================
+function setupAuditTrailView() {
+  function renderAuditView() {
+    const stats = getAuditStats();
+    const logs = getLocalAuditLogs(100);
+
+    // Update stat cards
+    const statTotal = document.getElementById('audit-stat-total');
+    const statToday = document.getElementById('audit-stat-today');
+    const statWarnings = document.getElementById('audit-stat-warnings');
+    const statCritical = document.getElementById('audit-stat-critical');
+
+    if (statTotal) statTotal.textContent = stats.totalLogs;
+    if (statToday) statToday.textContent = stats.todayLogs;
+    if (statWarnings) statWarnings.textContent = stats.warningCount;
+    if (statCritical) statCritical.textContent = stats.criticalCount;
+
+    // Render audit log table
+    const tbody = document.getElementById('audit-table-body');
+    if (!tbody) return;
+
+    if (logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        Nenhum registro de auditoria encontrado.
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = logs.slice(0, 50).map(log => {
+      const date = new Date(log.timestamp);
+      const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const badge = formatSeverityBadge(log.severity);
+      const detailStr = log.details ? Object.entries(log.details)
+        .filter(([k]) => !['userAgent', 'screenSize'].includes(k))
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ')
+        .substring(0, 80) : '';
+
+      return `<tr>
+        <td style="white-space: nowrap;">
+          <div style="font-weight: 600; font-size: 0.82rem;">${dateStr}</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">${timeStr}</div>
+        </td>
+        <td style="font-size: 0.82rem;">${formatAuditAction(log.action)}</td>
+        <td>
+          <span class="audit-severity-badge" style="background: ${badge.bg}; color: ${badge.color};">${badge.label}</span>
+        </td>
+        <td>
+          <div style="font-size: 0.82rem; font-weight: 500;">${escapeHtml(log.userName || '')}</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(log.userRole || '')}</div>
+        </td>
+        <td style="font-size: 0.75rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${escapeHtml(detailStr) || '—'}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Export audit CSV
+  const btnExport = document.getElementById('btn-export-audit-csv');
+  if (btnExport) {
+    btnExport.addEventListener('click', () => {
+      const csv = exportAuditToCSV();
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `nexus_audit_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      showToast('📊 Relatório de auditoria exportado!', 'success');
+      logAudit(AUDIT_ACTIONS.DATA_EXPORTED, { type: 'audit_csv' });
+    });
+  }
+
+  // Subscribe to audit events for live rendering
+  onAuditLog(() => renderAuditView());
+
+  // Initial render
+  renderAuditView();
+}
+
+// ==========================================================================
+// Notification Center (Bell Icon + Dropdown)
+// ==========================================================================
+function setupNotificationCenter() {
+  const bellBtn = document.getElementById('btn-notification-bell');
+  const dropdown = document.getElementById('notification-dropdown');
+  const badge = document.getElementById('notification-badge');
+  const markAllBtn = document.getElementById('btn-mark-all-read');
+  const enablePushBtn = document.getElementById('btn-enable-push');
+
+  function updateBadge() {
+    const count = getUnreadCount();
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  }
+
+  function renderNotificationList() {
+    const listEl = document.getElementById('notification-list');
+    if (!listEl) return;
+
+    const notifications = getInAppNotifications(20);
+    if (notifications.length === 0) {
+      listEl.innerHTML = `<div class="notification-empty" style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+        Nenhuma notificação ainda.
+      </div>`;
+      return;
+    }
+
+    listEl.innerHTML = notifications.map(n => {
+      const icon = getNotificationIcon(n.type);
+      const date = new Date(n.timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMin = Math.floor(diffMs / 60000);
+      let timeAgo;
+      if (diffMin < 1) timeAgo = 'Agora';
+      else if (diffMin < 60) timeAgo = `${diffMin}min atrás`;
+      else if (diffMin < 1440) timeAgo = `${Math.floor(diffMin / 60)}h atrás`;
+      else timeAgo = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+      return `<div class="notification-item ${n.read ? '' : 'unread'}" style="background: ${n.read ? '#181d28' : '#1c263c'} !important; border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; ${n.read ? '' : 'border-left: 4px solid #3b82f6 !important;'}" onclick="window.handleNotificationClick('${n.id}')">
+        <div class="notification-item-icon" style="background: #22293a !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #ffffff !important;">${icon}</div>
+        <div class="notification-item-content">
+          <div class="notification-item-title" style="color: #ffffff !important; font-weight: 600; font-size: 0.86rem;">${escapeHtml(n.title)}</div>
+          <div class="notification-item-body" style="color: #cbd5e1 !important; font-size: 0.78rem; line-height: 1.4;">${escapeHtml(n.body)}</div>
+          <div class="notification-item-time" style="color: #94a3b8 !important; font-size: 0.7rem; margin-top: 4px;">${timeAgo}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Toggle dropdown
+  if (bellBtn) {
+    bellBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (dropdown) {
+        const isVisible = dropdown.style.display !== 'none';
+        dropdown.style.display = isVisible ? 'none' : 'flex';
+        if (!isVisible) renderNotificationList();
+      }
+    });
+  }
+
+  // Close dropdown on click outside
+  document.addEventListener('click', (e) => {
+    if (dropdown && dropdown.style.display !== 'none') {
+      const wrapper = document.getElementById('notification-bell-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    }
+  });
+
+  // Mark all as read
+  if (markAllBtn) {
+    markAllBtn.addEventListener('click', () => {
+      markAllAsRead();
+      renderNotificationList();
+      updateBadge();
+      showToast('Todas as notificações marcadas como lidas.', 'info');
+    });
+  }
+
+  // Enable push notifications
+  if (enablePushBtn) {
+    enablePushBtn.addEventListener('click', async () => {
+      const permission = await requestNotificationPermission();
+      if (permission === 'granted') {
+        showToast('🔔 Notificações push ativadas!', 'success');
+        enablePushBtn.textContent = '✅ Notificações Push Ativas';
+        enablePushBtn.disabled = true;
+      } else if (permission === 'denied') {
+        showToast('Permissão de notificações foi negada pelo navegador.', 'error');
+      } else {
+        showToast('Notificações não são suportadas neste navegador.', 'info');
+      }
+    });
+
+    // Update button state
+    if (getNotificationPermission() === 'granted') {
+      enablePushBtn.textContent = '✅ Notificações Push Ativas';
+      enablePushBtn.disabled = true;
+    }
+  }
+
+  // Notification click handler
+  window.handleNotificationClick = function(notifId) {
+    markAsRead(notifId);
+    renderNotificationList();
+    updateBadge();
+  };
+
+  // Subscribe to changes
+  onNotificationsChange(() => {
+    updateBadge();
+  });
+
+  // Initial state
+  updateBadge();
+}

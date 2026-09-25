@@ -14,6 +14,7 @@
   --bg-deep: #f4f6fa;
   --bg-primary: #ffffff;
   --bg-surface: #ffffff;
+  --bg-card: #ffffff;
   --bg-surface-elevated: #f8fafc;
   --bg-surface-glass: rgba(255, 255, 255, 0.94);
   --bg-surface-glass-border: #e2e8f0;
@@ -111,6 +112,7 @@
   --bg-deep: #0b0d12;
   --bg-primary: #11141c;
   --bg-surface: #171b26;
+  --bg-card: #1f2533;
   --bg-surface-elevated: #1f2533;
   --bg-surface-glass: rgba(23, 27, 38, 0.88);
   --bg-surface-glass-border: rgba(255, 255, 255, 0.08);

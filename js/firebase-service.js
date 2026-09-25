@@ -48,6 +48,14 @@ export async function initializeFirestore(config) {
 }
 
 /**
+ * Returns the current active Firestore instance
+ */
+export function getFirestoreDb() {
+  return db;
+}
+
+
+/**
  * Subscribes to real-time updates from Firestore 'customers' collection
  * Multi-tenant isolation: Filters by orgId
  * @param {Function} onData - Callback when data changes
