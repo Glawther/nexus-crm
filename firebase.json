@@ -5,10 +5,19 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      "**/.git/**",
+      "**/.agents/**",
       "**/node_modules/**",
+      "server/**",
+      "server.js",
+      "data/**",
       "README.md",
+      "GEMINI.md",
+      "package*.json",
+      "firestore.rules",
       ".env*",
-      "*.log"
+      "*.log",
+      "**/*.log"
     ],
     "headers": [
       {

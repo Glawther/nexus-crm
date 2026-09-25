@@ -3,7 +3,7 @@
  * Tríade CID: Disponibilidade (D)
  */
 
-const CACHE_NAME = 'nexus-crm-v1.4.4';
+const CACHE_NAME = 'nexus-crm-v2.0.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -14,6 +14,23 @@ const STATIC_ASSETS = [
   '/css/layout.css',
   '/css/components.css',
   '/css/animations.css',
+  '/js/app.js',
+  '/js/core/config.js',
+  '/js/core/crm-store.js',
+  '/js/core/storage-manager.js',
+  '/js/core/theme-manager.js',
+  '/js/ui/ui-renderer.js',
+  '/js/services/auth-service.js',
+  '/js/services/employee-service.js',
+  '/js/services/billing-service.js',
+  '/js/services/audit-service.js',
+  '/js/services/notification-service.js',
+  '/js/services/team-invite-service.js',
+  '/js/services/whatsapp-service.js',
+  '/js/services/webhook-service.js',
+  '/js/services/firebase-service.js',
+  '/js/services/gemini-service.js',
+  '/js/services/export-service.js',
   '/js/config.js',
   '/js/theme-manager.js',
   '/js/auth-service.js',
@@ -29,8 +46,7 @@ const STATIC_ASSETS = [
   '/js/firebase-service.js',
   '/js/gemini-service.js',
   '/js/export-service.js',
-  '/js/ui-renderer.js',
-  '/js/app.js'
+  '/js/ui-renderer.js'
 ];
 
 // Install: Cache core application assets

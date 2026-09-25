@@ -3,8 +3,8 @@
  * Enterprise Grade CRM with AI, Cloud Firestore, WhatsApp Templates, Tasks & Timeline
  */
 
-import { storage } from './storage-manager.js';
-import { crmStore, STAGES, PRIORITIES, LOSS_REASONS, SALES_TEAM } from './crm-store.js';
+import { storage } from './core/storage-manager.js';
+import { crmStore, STAGES, PRIORITIES, LOSS_REASONS, SALES_TEAM } from './core/crm-store.js';
 import { 
   renderKPIs, 
   renderKanban, 
@@ -20,15 +20,15 @@ import {
   getWhatsAppLink,
   formatBRL,
   escapeHtml
-} from './ui-renderer.js';
+} from './ui/ui-renderer.js';
 import { 
   getSavedFirebaseConfig, 
   getSavedOrganization, 
   saveOrganization, 
   applyWhitelabelStyles, 
   getAiUsageMetrics 
-} from './config.js';
-import { analyzeDealWithGemini, getSavedGeminiKey, saveGeminiKey } from './gemini-service.js';
+} from './core/config.js';
+import { analyzeDealWithGemini, getSavedGeminiKey, saveGeminiKey } from './services/gemini-service.js';
 import { 
   initAuth, 
   signInWithGoogle, 
@@ -46,12 +46,12 @@ import {
   loginWithEmail,
   registerUser,
   logoutToPortal
-} from './auth-service.js';
+} from './services/auth-service.js';
 import { 
   exportCustomersToCSV, 
   exportAuditLogsToCSV, 
   exportBackupToJSON 
-} from './export-service.js';
+} from './services/export-service.js';
 import { 
   formatCPF, 
   validateCPF, 
@@ -66,13 +66,13 @@ import {
   setEmployeePermanentPassword, 
   generateCredentialsShareText, 
   onEmployeesChange 
-} from './employee-service.js';
+} from './services/employee-service.js';
 import { 
   initTheme, 
   toggleTheme, 
   setTheme, 
   getSavedTheme 
-} from './theme-manager.js';
+} from './core/theme-manager.js';
 import {
   logAudit,
   AUDIT_ACTIONS,
@@ -84,8 +84,8 @@ import {
   formatSeverityBadge,
   exportAuditToCSV,
   onAuditLog
-} from './audit-service.js';
-import { getFirestoreDb } from './firebase-service.js';
+} from './services/audit-service.js';
+import { getFirestoreDb } from './services/firebase-service.js';
 import {
   createInvite,
   getInvites,
@@ -94,7 +94,7 @@ import {
   resendInvite,
   generateInviteShareText,
   INVITE_STATUS
-} from './team-invite-service.js';
+} from './services/team-invite-service.js';
 import {
   requestNotificationPermission,
   getNotificationPermission,
@@ -108,7 +108,7 @@ import {
   scheduleFollowUpReminder,
   notifyDealEvent,
   NOTIFICATION_TYPES
-} from './notification-service.js';
+} from './services/notification-service.js';
 import {
   PLANS,
   generatePixQRCodeSVG,
@@ -117,21 +117,21 @@ import {
   detectCardBrand,
   processPayment,
   getInvoices
-} from './billing-service.js';
+} from './services/billing-service.js';
 import {
   cleanPhoneNumber,
   buildWhatsAppLink,
   generateAIOutreachMessages,
   recordWhatsAppContact,
   OUTREACH_TEMPLATES
-} from './whatsapp-service.js';
+} from './services/whatsapp-service.js';
 import {
   getWebhookConfig,
   saveWebhookConfig,
   regenerateWebhookToken,
   pollWebhookInbox,
   sendTestWebhookLead
-} from './webhook-service.js';
+} from './services/webhook-service.js';
 
 let draggedCustomerId = null;
 let activeWhatsAppCustomerId = null;
