@@ -4,7 +4,7 @@
  * Rich Activity Timeline, Tasks & Loss Reasons Support.
  */
 
-import { STORAGE_KEYS, getSavedFirebaseConfig } from './config.js';
+import { STORAGE_KEYS, getSavedFirebaseConfig, getSavedOrganization } from './config.js';
 import * as firestoreService from './firebase-service.js';
 import { getCurrentUser, isAdmin, USER_ROLES } from './auth-service.js';
 import { crmStore } from './crm-store.js';
@@ -245,6 +245,7 @@ class StorageManager {
    */
   async init() {
     const config = getSavedFirebaseConfig();
+    const currentOrg = getSavedOrganization();
     if (config) {
       try {
         await firestoreService.initializeFirestore(config);
@@ -259,7 +260,8 @@ class StorageManager {
             this.mode = 'local';
             this.loadLocalData();
             this.notifyListeners();
-          }
+          },
+          currentOrg?.id
         );
         this.isInitialized = true;
         return { mode: 'firestore', success: true };
@@ -389,7 +391,9 @@ class StorageManager {
       }
       return merged;
     } else {
+      const org = getSavedOrganization();
       const newLead = {
+        orgId: customerData.orgId || org?.id || 'org_nexus_default',
         activities: [],
         tasks: [],
         assignedTo: defaultAssignedTo,
@@ -413,7 +417,7 @@ class StorageManager {
       crmStore.addAuditLog('Criação de Oportunidade', `Novo lead "${newLead.name}" (${newLead.company}) cadastrado por ${user.name} [${user.role}].`, newLead);
 
       if (this.mode === 'firestore') {
-        const result = await firestoreService.addFirestoreCustomer(newLead);
+        const result = await firestoreService.addFirestoreCustomer(newLead, newLead.orgId);
         const index = this.currentData.findIndex(c => c.id === result.id || c.name === newLead.name);
         if (index === -1) {
           this.currentData.unshift(result);

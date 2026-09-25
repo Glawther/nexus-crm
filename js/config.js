@@ -6,7 +6,29 @@ const STORAGE_KEYS = {
   FIREBASE_CONFIG: 'nexus_crm_firebase_config',
   LOCAL_DATA: 'nexus_crm_local_customers',
   ACTIVITIES_DATA: 'nexus_crm_local_activities',
-  APP_PREFS: 'nexus_crm_preferences'
+  APP_PREFS: 'nexus_crm_preferences',
+  ORGANIZATION: 'nexus_crm_organization_config',
+  AI_METRICS: 'nexus_crm_ai_usage_metrics'
+};
+
+// Default commercial organization & whitelabel parameters
+export const defaultOrganization = {
+  id: 'org_nexus_default',
+  name: 'Nexus CRM Enterprise',
+  legalName: 'Nexus Soluções Comerciais e Tecnologia Ltda',
+  cnpj: '12.345.678/0001-90',
+  logoUrl: '', // Base64 or image URL
+  brandColor: '#3b82f6', // Hex color
+  plan: 'pro', // 'starter' | 'pro' | 'enterprise'
+  planName: 'Nexus Pro',
+  planStatus: 'active', // 'active' | 'trial' | 'past_due'
+  trialDaysLeft: 14,
+  maxLeads: 5000,
+  maxUsers: 10,
+  aiQuotaMonth: 150,
+  aiUsedThisMonth: 14,
+  currency: 'BRL',
+  createdAt: new Date().toISOString()
 };
 
 // Default active credentials for Google Cloud Firestore (nexuscrm-d8e13)
@@ -64,4 +86,116 @@ export function isFirebaseConfigured() {
   return Boolean(config && config.projectId && config.apiKey);
 }
 
+/**
+ * Retrieves active Organization / Multi-tenant profile
+ */
+export function getSavedOrganization() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.ORGANIZATION);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.id) {
+        return { ...defaultOrganization, ...parsed };
+      }
+    }
+  } catch (e) {
+    console.warn("Could not load organization config:", e);
+  }
+  return defaultOrganization;
+}
+
+/**
+ * Saves active Organization / Whitelabel settings
+ */
+export function saveOrganization(org) {
+  if (!org || !org.id) throw new Error("Dados de organização inválidos.");
+  const updated = { ...defaultOrganization, ...org, updatedAt: new Date().toISOString() };
+  localStorage.setItem(STORAGE_KEYS.ORGANIZATION, JSON.stringify(updated));
+  applyWhitelabelStyles(updated);
+  return updated;
+}
+
+/**
+ * Dynamically applies Whitelabel Brand Color, Logo and Title to the DOM
+ */
+export function applyWhitelabelStyles(org = null) {
+  const currentOrg = org || getSavedOrganization();
+  const root = document.documentElement;
+
+  // 1. Apply primary brand color and derivations
+  if (currentOrg.brandColor) {
+    const hex = currentOrg.brandColor;
+    root.style.setProperty('--color-primary', hex);
+    
+    // Convert hex to rgb for rgba transparency support
+    const r = parseInt(hex.slice(1, 3), 16) || 59;
+    const g = parseInt(hex.slice(3, 5), 16) || 130;
+    const b = parseInt(hex.slice(5, 7), 16) || 246;
+    root.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`);
+    root.style.setProperty('--color-primary-hover', `rgb(${Math.max(0, r - 25)}, ${Math.max(0, g - 25)}, ${Math.max(0, b - 25)})`);
+    root.style.setProperty('--color-primary-light', `rgba(${r}, ${g}, ${b}, 0.12)`);
+  }
+
+  // 2. Apply company name to sidebar brand and document title
+  const brandNameEls = document.querySelectorAll('.brand-name');
+  brandNameEls.forEach(el => {
+    el.textContent = currentOrg.name || 'Nexus CRM';
+  });
+
+  if (currentOrg.name) {
+    document.title = `${currentOrg.name} - Plataforma de Vendas Inteligente`;
+  }
+
+  // 3. Apply custom logo if set
+  const brandIconEl = document.querySelector('.brand-icon');
+  if (brandIconEl) {
+    if (currentOrg.logoUrl) {
+      brandIconEl.innerHTML = `<img src="${currentOrg.logoUrl}" alt="${currentOrg.name}" style="width: 24px; height: 24px; object-fit: contain; border-radius: 4px;">`;
+    } else {
+      brandIconEl.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+    }
+  }
+}
+
+/**
+ * Retrieves AI usage metrics for the active organization
+ */
+export function getAiUsageMetrics() {
+  const org = getSavedOrganization();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.AI_METRICS);
+    if (raw) {
+      const data = JSON.parse(raw);
+      return {
+        used: Number(data.used) || 0,
+        quota: Number(org.aiQuotaMonth) || 150,
+        lastReset: data.lastReset || new Date().toISOString()
+      };
+    }
+  } catch (e) {
+    console.warn("Could not load AI metrics:", e);
+  }
+  return {
+    used: Number(org.aiUsedThisMonth) || 14,
+    quota: Number(org.aiQuotaMonth) || 150,
+    lastReset: new Date().toISOString()
+  };
+}
+
+/**
+ * Records an AI API call usage
+ */
+export function recordAiUsage() {
+  const metrics = getAiUsageMetrics();
+  metrics.used += 1;
+  localStorage.setItem(STORAGE_KEYS.AI_METRICS, JSON.stringify(metrics));
+  
+  // Also update organization in memory
+  const org = getSavedOrganization();
+  org.aiUsedThisMonth = metrics.used;
+  localStorage.setItem(STORAGE_KEYS.ORGANIZATION, JSON.stringify(org));
+  return metrics;
+}
+
 export { STORAGE_KEYS };
+

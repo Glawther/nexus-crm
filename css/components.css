@@ -2511,6 +2511,22 @@
   border-radius: var(--radius-sm);
 }
 
+/* Whitelabel & Branding Customizer */
+.whitelabel-color-btn {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.whitelabel-color-btn:hover {
+  transform: scale(1.15);
+}
+
+.whitelabel-color-btn.active {
+  box-shadow: 0 0 0 3px var(--bg-card), 0 0 0 5px var(--text-primary);
+  transform: scale(1.1);
+}
+
+
 
 
 

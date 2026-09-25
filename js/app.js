@@ -21,7 +21,13 @@ import {
   formatBRL,
   escapeHtml
 } from './ui-renderer.js';
-import { getSavedFirebaseConfig } from './config.js';
+import { 
+  getSavedFirebaseConfig, 
+  getSavedOrganization, 
+  saveOrganization, 
+  applyWhitelabelStyles, 
+  getAiUsageMetrics 
+} from './config.js';
 import { analyzeDealWithGemini, getSavedGeminiKey, saveGeminiKey } from './gemini-service.js';
 import { 
   initAuth, 
@@ -98,6 +104,9 @@ async function initApp() {
     setupPWA();
     setupHeaderToolsMenu();
     setupEmployeeManagementEvents();
+    applyWhitelabelStyles();
+    setupWhitelabelEvents();
+    setupBillingEvents();
 
     // Setup Auth state
     onAuthChange((user) => {
@@ -981,6 +990,232 @@ window.handleAnalyzeWithAI = async function(customerId) {
     geminiDialog.close();
   }
 };
+
+// ==========================================================================
+// Whitelabel & Branding Customizer
+// ==========================================================================
+function setupWhitelabelEvents() {
+  const dialog = document.getElementById('whitelabel-dialog');
+  const btnOpen = document.getElementById('btn-menu-whitelabel');
+  const btnClose = document.getElementById('btn-close-whitelabel-dialog');
+  const form = document.getElementById('form-whitelabel');
+  const btnReset = document.getElementById('btn-whitelabel-reset');
+
+  const inputName = document.getElementById('whitelabel-input-name');
+  const inputLegal = document.getElementById('whitelabel-input-legal');
+  const inputLogo = document.getElementById('whitelabel-input-logo');
+  const fileLogo = document.getElementById('whitelabel-file-logo');
+  const inputColor = document.getElementById('whitelabel-input-color');
+  const colorBtns = document.querySelectorAll('.whitelabel-color-btn');
+
+  const previewName = document.getElementById('whitelabel-preview-name');
+  const previewIcon = document.getElementById('whitelabel-preview-icon');
+
+  function updatePreview(name, logo, color) {
+    if (previewName) previewName.textContent = name || 'Nexus CRM';
+    if (previewIcon) {
+      if (color) previewIcon.style.background = color;
+      if (logo) {
+        previewIcon.innerHTML = `<img src="${logo}" style="width: 100%; height: 100%; object-fit: contain;">`;
+      } else {
+        previewIcon.textContent = (name || 'N').charAt(0).toUpperCase();
+      }
+    }
+  }
+
+  if (btnOpen && dialog) {
+    btnOpen.addEventListener('click', () => {
+      const org = getSavedOrganization();
+      if (inputName) inputName.value = org.name || '';
+      if (inputLegal) inputLegal.value = org.legalName || '';
+      if (inputLogo) inputLogo.value = org.logoUrl || '';
+      if (inputColor) inputColor.value = org.brandColor || '#3b82f6';
+      
+      updatePreview(org.name, org.logoUrl, org.brandColor);
+
+      // Close tools dropdown if open
+      const toolsMenu = document.getElementById('header-tools-menu');
+      if (toolsMenu) toolsMenu.style.display = 'none';
+
+      dialog.showModal();
+    });
+  }
+
+  if (inputName) {
+    inputName.addEventListener('input', () => {
+      updatePreview(inputName.value, inputLogo?.value, inputColor?.value);
+    });
+  }
+
+  if (inputLogo) {
+    inputLogo.addEventListener('input', () => {
+      updatePreview(inputName?.value, inputLogo.value, inputColor?.value);
+    });
+  }
+
+  if (fileLogo) {
+    fileLogo.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const base64 = evt.target.result;
+          if (inputLogo) inputLogo.value = base64;
+          updatePreview(inputName?.value, base64, inputColor?.value);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Color preset buttons
+  colorBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      colorBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const color = btn.getAttribute('data-color');
+      if (inputColor) inputColor.value = color;
+      updatePreview(inputName?.value, inputLogo?.value, color);
+    });
+  });
+
+  if (inputColor) {
+    inputColor.addEventListener('input', () => {
+      colorBtns.forEach(b => b.classList.remove('active'));
+      updatePreview(inputName?.value, inputLogo?.value, inputColor.value);
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener('click', () => dialog && dialog.close());
+  }
+
+  if (btnReset) {
+    btnReset.addEventListener('click', () => {
+      const defaultOrg = {
+        name: 'Nexus CRM Enterprise',
+        legalName: 'Nexus Soluções Comerciais e Tecnologia Ltda',
+        logoUrl: '',
+        brandColor: '#3b82f6'
+      };
+      saveOrganization(defaultOrg);
+      if (inputName) inputName.value = defaultOrg.name;
+      if (inputLegal) inputLegal.value = defaultOrg.legalName;
+      if (inputLogo) inputLogo.value = '';
+      if (inputColor) inputColor.value = defaultOrg.brandColor;
+      updatePreview(defaultOrg.name, '', defaultOrg.brandColor);
+      showToast("Identidade visual restaurada para o padrão!", "info");
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const org = getSavedOrganization();
+      const updated = {
+        ...org,
+        name: inputName?.value.trim() || 'Nexus CRM',
+        legalName: inputLegal?.value.trim() || '',
+        logoUrl: inputLogo?.value.trim() || '',
+        brandColor: inputColor?.value || '#3b82f6'
+      };
+      saveOrganization(updated);
+      dialog.close();
+      showToast("Identidade visual atualizada com sucesso!", "success");
+    });
+  }
+}
+
+// ==========================================================================
+// Billing & Subscription Manager
+// ==========================================================================
+function setupBillingEvents() {
+  const dialog = document.getElementById('billing-dialog');
+  const btnOpen = document.getElementById('btn-menu-billing');
+  const btnClose = document.getElementById('btn-close-billing-dialog');
+  const btnCloseFooter = document.getElementById('btn-close-billing-dialog-footer');
+
+  const planNameEl = document.getElementById('billing-plan-name');
+  const aiCountEl = document.getElementById('billing-ai-count');
+  const aiBarEl = document.getElementById('billing-ai-bar');
+  const leadsCountEl = document.getElementById('billing-leads-count');
+  const usersCountEl = document.getElementById('billing-users-count');
+
+  if (btnOpen && dialog) {
+    btnOpen.addEventListener('click', () => {
+      const org = getSavedOrganization();
+      const ai = getAiUsageMetrics();
+      const customersCount = storage.getCustomers().length;
+
+      if (planNameEl) {
+        planNameEl.textContent = `${org.planName || 'Nexus Pro'} (${org.planStatus === 'trial' ? 'Período de Teste' : 'Assinatura Ativa'})`;
+      }
+
+      const percent = Math.min(100, Math.round((ai.used / ai.quota) * 100));
+      if (aiCountEl) {
+        aiCountEl.textContent = `${ai.used} / ${ai.quota} chamadas este mês (${percent}%)`;
+      }
+      if (aiBarEl) {
+        aiBarEl.style.width = `${percent}%`;
+        if (percent > 90) {
+          aiBarEl.style.background = 'linear-gradient(90deg, #f59e0b, #ef4444)';
+        } else {
+          aiBarEl.style.background = 'linear-gradient(90deg, #3b82f6, #10b981)';
+        }
+      }
+
+      if (leadsCountEl) {
+        leadsCountEl.textContent = `${customersCount} / ${(org.maxLeads || 5000).toLocaleString('pt-BR')}`;
+      }
+
+      if (usersCountEl) {
+        usersCountEl.textContent = `2 / ${org.maxUsers || 10}`;
+      }
+
+      // Close tools dropdown if open
+      const toolsMenu = document.getElementById('header-tools-menu');
+      if (toolsMenu) toolsMenu.style.display = 'none';
+
+      dialog.showModal();
+    });
+  }
+
+  const closeDialog = () => dialog && dialog.close();
+  if (btnClose) btnClose.addEventListener('click', closeDialog);
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeDialog);
+
+  // Plan selection buttons
+  const planButtons = document.querySelectorAll('.btn-plan-select');
+  planButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const plan = btn.getAttribute('data-plan');
+      const org = getSavedOrganization();
+      if (plan === 'starter') {
+        org.plan = 'starter';
+        org.planName = 'Nexus Starter';
+        org.aiQuotaMonth = 30;
+        org.maxLeads = 500;
+        org.maxUsers = 2;
+      } else if (plan === 'pro') {
+        org.plan = 'pro';
+        org.planName = 'Nexus Pro';
+        org.aiQuotaMonth = 150;
+        org.maxLeads = 5000;
+        org.maxUsers = 10;
+      } else if (plan === 'enterprise') {
+        org.plan = 'enterprise';
+        org.planName = 'Nexus Enterprise';
+        org.aiQuotaMonth = 9999;
+        org.maxLeads = 50000;
+        org.maxUsers = 50;
+      }
+      saveOrganization(org);
+      showToast(`Plano alterado para ${org.planName}!`, "success");
+      dialog.close();
+    });
+  });
+}
+
 
 // ==========================================================================
 // Export CSV Events

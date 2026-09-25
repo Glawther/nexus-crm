@@ -236,6 +236,25 @@
 
             <div class="dropdown-divider"></div>
 
+            <div class="tools-group-title">Empresa &amp; Comercial</div>
+            <button type="button" class="dropdown-item" id="btn-menu-whitelabel">
+              <span class="dropdown-item-icon">🎨</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Minha Empresa &amp; Whitelabel</span>
+                <span class="dropdown-item-desc">Nome, Logotipo e Cores da Marca</span>
+              </div>
+            </button>
+
+            <button type="button" class="dropdown-item" id="btn-menu-billing">
+              <span class="dropdown-item-icon">💳</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Assinatura &amp; Cota de IA</span>
+                <span class="dropdown-item-desc">Plano Nexus e medidor de consumo</span>
+              </div>
+            </button>
+
+            <div class="dropdown-divider"></div>
+
             <div class="tools-group-title">Operações &amp; Dados</div>
             <button type="button" class="dropdown-item" id="btn-menu-import">
               <span class="dropdown-item-icon">📥</span>
@@ -1418,6 +1437,212 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
         </button>
       </div>
     </form>
+  </dialog>
+
+  <!-- ======================================================================
+       DIALOG: MINHA EMPRESA & WHITELABEL
+       ====================================================================== -->
+  <dialog id="whitelabel-dialog" class="crm-dialog" style="max-width: 600px; width: 95%;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+          🎨
+        </div>
+        <div>
+          <h2 class="dialog-title">Minha Empresa &amp; Whitelabel</h2>
+          <span style="font-size: 0.72rem; color: var(--text-secondary);">Identidade Visual, Nome da Empresa e Cores da Marca</span>
+        </div>
+      </div>
+      <button type="button" class="dialog-close" id="btn-close-whitelabel-dialog" aria-label="Fechar">&times;</button>
+    </div>
+
+    <form id="form-whitelabel">
+      <div class="dialog-body" style="display: flex; flex-direction: column; gap: 1rem;">
+        
+        <!-- Live Brand Preview Card -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div id="whitelabel-preview-icon" style="width: 40px; height: 40px; border-radius: 8px; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.1rem; overflow: hidden;">
+              N
+            </div>
+            <div>
+              <div id="whitelabel-preview-name" style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">Nexus CRM</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Prévia da sua marca no sistema</div>
+            </div>
+          </div>
+          <span class="badge" style="background: var(--color-primary-light); color: var(--color-primary); border: 1px solid var(--color-primary); font-size: 0.75rem; font-weight: 600;">
+            PRODUTO LICENCIADO
+          </span>
+        </div>
+
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+          <div class="form-group">
+            <label for="whitelabel-input-name">Nome Fantasia / Marca *</label>
+            <input type="text" id="whitelabel-input-name" class="form-input" placeholder="Ex: Vanguard Negócios" required>
+          </div>
+          <div class="form-group">
+            <label for="whitelabel-input-legal">Razão Social / CNPJ</label>
+            <input type="text" id="whitelabel-input-legal" class="form-input" placeholder="Ex: 00.000.000/0001-00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="whitelabel-input-logo">Logotipo da Empresa (URL ou Arquivo)</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="whitelabel-input-logo" class="form-input" placeholder="https://suaempresa.com/logo.png">
+            <label class="btn btn-secondary btn-sm" style="cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+              📁 Arquivo
+              <input type="file" id="whitelabel-file-logo" accept="image/*" style="display: none;">
+            </label>
+          </div>
+          <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Recomendado: imagem transparente PNG ou SVG.</span>
+        </div>
+
+        <div class="form-group">
+          <label>Cor Primária da Marca</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.35rem;">
+            <button type="button" class="whitelabel-color-btn active" data-color="#3b82f6" style="background: #3b82f6; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; cursor: pointer;" title="Azul Nexus"></button>
+            <button type="button" class="whitelabel-color-btn" data-color="#10b981" style="background: #10b981; width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Verde Esmeralda"></button>
+            <button type="button" class="whitelabel-color-btn" data-color="#8b5cf6" style="background: #8b5cf6; width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Roxo Tech"></button>
+            <button type="button" class="whitelabel-color-btn" data-color="#f59e0b" style="background: #f59e0b; width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Âmbar / Dourado"></button>
+            <button type="button" class="whitelabel-color-btn" data-color="#ef4444" style="background: #ef4444; width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Vermelho Rubi"></button>
+            <button type="button" class="whitelabel-color-btn" data-color="#06b6d4" style="background: #06b6d4; width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Ciano Moderno"></button>
+            <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary);">Customizada:</span>
+              <input type="color" id="whitelabel-input-color" value="#3b82f6" style="width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; background: transparent;">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="dialog-footer" style="display: flex; justify-content: space-between;">
+        <button type="button" class="btn btn-secondary" id="btn-whitelabel-reset">Restaurar Padrão Nexus</button>
+        <button type="submit" class="btn btn-primary" style="padding: 9px 20px;">Salvar Identidade Visual</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ======================================================================
+       DIALOG: ASSINATURA & COTA DE IA
+       ====================================================================== -->
+  <dialog id="billing-dialog" class="crm-dialog" style="max-width: 650px; width: 95%;">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+          💳
+        </div>
+        <div>
+          <h2 class="dialog-title">Assinatura &amp; Consumo de IA</h2>
+          <span style="font-size: 0.72rem; color: var(--text-secondary);">Plano Comercial Nexus e Métricas de Recursos</span>
+        </div>
+      </div>
+      <button type="button" class="dialog-close" id="btn-close-billing-dialog" aria-label="Fechar">&times;</button>
+    </div>
+
+    <div class="dialog-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+      
+      <!-- Current Subscription Status -->
+      <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.08)); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 1.2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div>
+            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--color-primary); letter-spacing: 0.5px;">Plano Atual</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary);" id="billing-plan-name">Nexus Pro (Período de Teste)</div>
+          </div>
+          <span class="badge" id="billing-plan-badge" style="background: #10b981; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;">
+            ATIVO • 14 DIAS RESTANTES
+          </span>
+        </div>
+
+        <!-- AI Usage Progress Bar -->
+        <div style="margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.35rem;">
+            <span style="font-weight: 600; color: var(--text-primary);">✨ Análises de IA (Google Gemini Flash):</span>
+            <strong id="billing-ai-count" style="color: var(--color-primary);">14 / 150 chamadas este mês (9%)</strong>
+          </div>
+          <div style="height: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 20px; overflow: hidden; border: 1px solid var(--border-color);">
+            <div id="billing-ai-bar" style="height: 100%; width: 9%; background: linear-gradient(90deg, #3b82f6, #10b981); border-radius: 20px; transition: width 0.4s ease;"></div>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+            Renovação da cota mensal no dia 1º de cada mês.
+          </div>
+        </div>
+      </div>
+
+      <!-- Resource Metrics Grid -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; text-align: center;">
+          <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);" id="billing-leads-count">6 / 5.000</div>
+          <div style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase;">Capacidade de Leads</div>
+        </div>
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; text-align: center;">
+          <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);" id="billing-users-count">2 / 10</div>
+          <div style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase;">Membros da Equipe</div>
+        </div>
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; text-align: center;">
+          <div style="font-size: 1.2rem; font-weight: 800; color: #10b981;">100%</div>
+          <div style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase;">SLA Nuvem Google</div>
+        </div>
+      </div>
+
+      <!-- Commercial Plans Selection Preview -->
+      <div>
+        <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.65rem;">
+          Planos Disponíveis para o seu CRM:
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+          
+          <div style="border: 1px solid var(--border-color); border-radius: 10px; padding: 0.85rem; background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Starter</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">R$ 49<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted);">/mês</span></div>
+              <ul style="font-size: 0.72rem; color: var(--text-secondary); padding-left: 1rem; margin: 0.5rem 0;">
+                <li>Até 500 leads</li>
+                <li>2 Vendedores</li>
+                <li>30 Análises IA/mês</li>
+              </ul>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm btn-plan-select" data-plan="starter" style="width: 100%; justify-content: center; font-size: 0.75rem;">Escolher Starter</button>
+          </div>
+
+          <div style="border: 2px solid var(--color-primary); border-radius: 10px; padding: 0.85rem; background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+            <div style="position: absolute; top: -10px; right: 10px; background: var(--color-primary); color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">Mais Popular</div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--color-primary);">Nexus Pro</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">R$ 149<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted);">/mês</span></div>
+              <ul style="font-size: 0.72rem; color: var(--text-secondary); padding-left: 1rem; margin: 0.5rem 0;">
+                <li>Até 5.000 leads</li>
+                <li>10 Vendedores</li>
+                <li>150 Análises IA/mês</li>
+                <li>Whitelabel Completo</li>
+              </ul>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm btn-plan-select" data-plan="pro" style="width: 100%; justify-content: center; font-size: 0.75rem;">Plano Atual</button>
+          </div>
+
+          <div style="border: 1px solid var(--border-color); border-radius: 10px; padding: 0.85rem; background: var(--bg-card); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Enterprise</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">R$ 349<span style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted);">/mês</span></div>
+              <ul style="font-size: 0.72rem; color: var(--text-secondary); padding-left: 1rem; margin: 0.5rem 0;">
+                <li>Leads Ilimitados</li>
+                <li>Equipe Ilimitada</li>
+                <li>IA Ilimitada (BYOK)</li>
+                <li>Suporte Dedicado</li>
+              </ul>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm btn-plan-select" data-plan="enterprise" style="width: 100%; justify-content: center; font-size: 0.75rem;">Escolher Enterprise</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="dialog-footer" style="display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 0.75rem; color: var(--text-muted);">🔒 Pagamentos recorrentes seguros via Stripe / Pix</span>
+      <button type="button" class="btn btn-secondary" id="btn-close-billing-dialog-footer">Fechar</button>
+    </div>
   </dialog>
 
   <!-- Container for Toast Notifications -->

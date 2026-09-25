@@ -3,6 +3,8 @@
  * Generates deal insights, win probability, sales strategies and proposal drafts.
  */
 
+import { recordAiUsage, getAiUsageMetrics, getSavedOrganization } from './config.js';
+
 const GEMINI_KEY_STORAGE = 'nexus_crm_gemini_api_key';
 
 /**
@@ -33,14 +35,18 @@ export async function analyzeDealWithGemini(customer) {
 
   if (apiKey) {
     try {
-      return await callGeminiAPI(customer, apiKey);
+      const result = await callGeminiAPI(customer, apiKey);
+      recordAiUsage();
+      return result;
     } catch (err) {
       console.warn("Gemini API call failed, falling back to smart analytical engine:", err);
+      recordAiUsage();
       return generateHeuristicAnalysis(customer);
     }
   }
 
   // Fallback to high-quality smart analytical engine
+  recordAiUsage();
   return generateHeuristicAnalysis(customer);
 }
 

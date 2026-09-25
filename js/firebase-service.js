@@ -49,10 +49,12 @@ export async function initializeFirestore(config) {
 
 /**
  * Subscribes to real-time updates from Firestore 'customers' collection
+ * Multi-tenant isolation: Filters by orgId
  * @param {Function} onData - Callback when data changes
  * @param {Function} onError - Callback when error occurs
+ * @param {string} orgId - Organization ID for tenant isolation
  */
-export async function subscribeToFirestoreCustomers(onData, onError) {
+export async function subscribeToFirestoreCustomers(onData, onError, orgId = null) {
   if (!db) {
     throw new Error("Firestore não inicializado.");
   }
@@ -60,21 +62,32 @@ export async function subscribeToFirestoreCustomers(onData, onError) {
   const { firestore } = await loadFirebaseModules();
   const customersCollection = firestore.collection(db, "customers");
 
-  // Query collection directly so documents missing updatedAt or with index anomalies are never dropped
+  // Query collection directly and perform robust multi-tenant filtering
   unsubscribeCustomers = firestore.onSnapshot(
     customersCollection,
     (snapshot) => {
       const customers = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
-        const clientOldId = data.id;
-        delete data.id; // Prevent internal 'id' property from colliding with authoritative doc.id
-        customers.push({
-          ...data,
-          id: doc.id,
-          firestoreId: doc.id,
-          clientLeadId: clientOldId || data.clientLeadId || doc.id
-        });
+        
+        // Multi-tenant check: allow documents belonging to this organization or generic demo leads
+        const isMatch = !orgId || 
+                        !data.orgId || 
+                        data.orgId === orgId || 
+                        data.orgId === 'org_nexus_default' || 
+                        data.orgId === 'default';
+
+        if (isMatch) {
+          const clientOldId = data.id;
+          delete data.id; // Prevent internal 'id' property from colliding with authoritative doc.id
+          customers.push({
+            ...data,
+            id: doc.id,
+            firestoreId: doc.id,
+            orgId: data.orgId || orgId || 'org_nexus_default',
+            clientLeadId: clientOldId || data.clientLeadId || doc.id
+          });
+        }
       });
 
       // Robust in-memory sorting by most recent update
@@ -97,9 +110,9 @@ export async function subscribeToFirestoreCustomers(onData, onError) {
 
 /**
  * Adds a new customer document into Firestore
- * Unifies document ID with customer ID so they are always 1:1 identical
+ * Unifies document ID with customer ID and binds organizationId
  */
-export async function addFirestoreCustomer(customerData) {
+export async function addFirestoreCustomer(customerData, orgId = null) {
   if (!db) throw new Error("Firestore não inicializado.");
   const { firestore } = await loadFirebaseModules();
   
@@ -110,6 +123,7 @@ export async function addFirestoreCustomer(customerData) {
   const payload = {
     ...cleanData,
     id: customId,
+    orgId: cleanData.orgId || orgId || 'org_nexus_default',
     clientLeadId: customId,
     createdAt: cleanData.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()

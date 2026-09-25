@@ -4,7 +4,7 @@
  * Uses Firebase Modular SDK v11 (firebase-auth)
  */
 
-import { getSavedFirebaseConfig } from './config.js';
+import { getSavedFirebaseConfig, saveOrganization, getSavedOrganization } from './config.js';
 
 export const USER_ROLES = {
   ADMIN: 'admin',
@@ -153,11 +153,28 @@ export function loginWithEmail(email, password, role = USER_ROLES.EMPLOYEE) {
 
 export function registerUser(name, email, password, role = USER_ROLES.EMPLOYEE, company = '') {
   setUserRole(role);
+  const companyClean = company && company.trim() ? company.trim() : 'Minha Empresa';
+  const orgSlug = 'org_' + companyClean.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20) + '_' + Math.random().toString(36).substring(2, 6);
+  
+  const org = {
+    id: orgSlug,
+    name: companyClean,
+    plan: 'pro',
+    planName: 'Nexus Pro',
+    planStatus: 'trial',
+    trialDaysLeft: 14,
+    aiQuotaMonth: 150,
+    aiUsedThisMonth: 0,
+    createdAt: new Date().toISOString()
+  };
+  saveOrganization(org);
+
   currentUser = {
     uid: 'user-' + Date.now().toString(36),
     name: role === USER_ROLES.ADMIN ? name + ' (Administrador)' : name + ' (Consultor)',
     email: email,
-    company: company,
+    company: companyClean,
+    orgId: org.id,
     role: role,
     photoURL: null
   };

@@ -35,5 +35,15 @@ service cloud.firestore {
     match /employees/{employeeId} {
       allow read, write: if true;
     }
+
+    // 5. Coleção de Organizações Comerciais e Whitelabel (Multi-tenant SaaS)
+    match /organizations/{orgId} {
+      allow read, write: if true;
+      
+      // Subcoleção dedicada de clientes isolados por empresa
+      match /customers/{customerId} {
+        allow read, write: if true;
+      }
+    }
   }
 }
