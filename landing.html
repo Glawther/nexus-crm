@@ -768,14 +768,99 @@
       gap: 16px;
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 860px) {
-      .nav-links { display: none; }
-      .footer-top { grid-template-columns: 1fr 1fr; }
+    /* FAQ Accordion Section */
+    section.faq-section {
+      padding: 90px 5%;
+      max-width: 900px;
+      margin: 0 auto;
     }
-    @media (max-width: 600px) {
-      .footer-top { grid-template-columns: 1fr; }
-      .cta-banner-box { padding: 40px 20px; }
+    .faq-list {
+      margin-top: 40px;
+    }
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+    .faq-item:hover {
+      border-color: rgba(217, 249, 66, 0.25);
+    }
+    .faq-question {
+      padding: 22px 24px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .faq-question:hover {
+      color: var(--primary);
+    }
+    .faq-icon {
+      font-size: 1.3rem;
+      color: var(--primary);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-block;
+      line-height: 1;
+    }
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+    }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s;
+      padding: 0 24px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .faq-item.open .faq-answer {
+      max-height: 300px;
+      padding: 0 24px 22px;
+    }
+
+    /* Floating WhatsApp Conversion Widget */
+    .whatsapp-float-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 60px;
+      height: 60px;
+      background: #25d366;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 8px 30px rgba(37, 211, 102, 0.45);
+      z-index: 9999;
+      text-decoration: none;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .whatsapp-float-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 35px rgba(37, 211, 102, 0.6);
+    }
+    .whatsapp-float-pulse {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #25d366;
+      opacity: 0.6;
+      animation: waPulse 2s infinite;
+      z-index: -1;
+    }
+    @keyframes waPulse {
+      0% { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.6); opacity: 0; }
     }
   </style>
 </head>
@@ -1207,6 +1292,65 @@
         </div>
       </div>
     </div>
+  <!-- FAQ Section (Objeções & Dúvidas Frequentes) -->
+  <section class="faq-section" id="faq">
+    <div class="section-header" style="text-align: center;">
+      <span class="section-tag">Perguntas Frequentes</span>
+      <h2 class="section-title">Tire suas dúvidas antes de assinar</h2>
+      <p class="section-subtitle">Tudo o que você precisa saber sobre a segurança, contratação e funcionamento do Nexus CRM.</p>
+    </div>
+
+    <div class="faq-list">
+      <div class="faq-item open">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+          <span>Como funciona o período de testes grátis de 7 dias?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          Você cria sua conta em menos de 1 minuto sem precisar cadastrar cartão de crédito. Durante os 7 dias, sua equipe tem acesso irrestrito ao funil Kanban, IA Gemini e automação de WhatsApp. Se decidir assinar, basta efetuar o pagamento via PIX ou cartão pelo painel.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+          <span>Posso cancelar a assinatura quando quiser?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          Sim! Nossos planos não possuem fidelidade nem multas rescisórias. O cancelamento pode ser feito em 1 clique direto na aba de governança e você mantém o acesso ativo até o encerramento do ciclo já pago.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+          <span>Meus dados de clientes e contatos estão seguros?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          Absolutamente. O Nexus CRM utiliza arquitetura Zero Trust com Row-Level Security (RLS) no PostgreSQL, criptografia em repouso AES-256-GCM com identificadores isolados por empresa e trilha de auditoria criptográfica imutável (ISO 27001 e conformidade total com a LGPD).
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+          <span>Consigo importar meus leads e clientes de outros sistemas ou planilhas?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          Sim! O sistema possui importador automático de planilhas CSV e Excel. Em menos de 30 segundos sua carteira inteira de clientes é mapeada para os estágios do funil.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+          <span>O aplicativo funciona no celular ou se a internet cair?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          Sim! Desenvolvido como Progressive Web App (PWA) de alta performance, ele instala como aplicativo nativo no Android, iOS, Windows e Mac, permitindo cadastrar leads, visualizar tarefas e gerenciar o pipeline mesmo sem sinal de internet (Offline-First).
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- Final CTA Banner -->
@@ -1321,5 +1465,11 @@
       }
     });
   </script>
+
+  <!-- Floating WhatsApp Direct Conversion Button -->
+  <a href="https://wa.me/5511999998888?text=Ol%C3%A1!%20Gostaria%20de%20tirar%20d%C3%BAvidas%20sobre%20o%20Nexus%20CRM%20Enterprise" target="_blank" rel="noopener" class="whatsapp-float-btn" title="Falar com consultor via WhatsApp">
+    <div class="whatsapp-float-pulse"></div>
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.41a8.17 8.17 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.187 8.187 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24h-.18zm4.51 11.59c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.12-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.78 2.72 4.31 3.81.6.26 1.07.41 1.44.53.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.18-.48-.3z"/></svg>
+  </a>
 </body>
 </html>
