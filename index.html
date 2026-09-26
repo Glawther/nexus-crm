@@ -108,7 +108,11 @@
 
       <!-- TAB 2: FORMULÁRIO DE REGISTRO (CRIAR CONTA) -->
       <div id="auth-panel-register" style="display: none;">
+        <div id="auth-selected-plan-badge" style="display: none; margin-bottom: 0.85rem; padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; background: rgba(217, 249, 66, 0.12); color: #d9f942; border: 1px solid rgba(217, 249, 66, 0.3); text-align: center;">
+          ⚡ Plano Selecionado: <span id="auth-plan-name-label">Professional</span>
+        </div>
         <form id="form-auth-register">
+          <input type="hidden" id="reg-input-plan" value="pro">
           <div class="form-group" style="margin-bottom: 0.85rem;">
             <label for="reg-input-name">Nome Completo *</label>
             <input type="text" id="reg-input-name" class="form-input" placeholder="Ex: Rodrigo Fagundes" required>

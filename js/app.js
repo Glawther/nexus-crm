@@ -1949,28 +1949,83 @@ function setupAuthPortalEvents() {
     });
   }
 
-  // Form Register submit
+  // Form Register submit com suporte a Self-Service Backend e Fallback PWA Offline
   if (formRegister) {
-    formRegister.addEventListener('submit', (e) => {
+    formRegister.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('reg-input-name').value.trim();
       const email = document.getElementById('reg-input-email').value.trim();
       const company = document.getElementById('reg-input-company').value.trim();
       const role = document.getElementById('reg-select-role').value;
       const password = document.getElementById('reg-input-password').value;
+      const plan = document.getElementById('reg-input-plan')?.value || 'pro';
 
       if (!name || !email || !password) {
         showToast("Preencha os campos obrigatórios.", "error");
         return;
       }
 
+      // Tentativa de provisionamento no backend comercial (Zero Trust API)
+      try {
+        const res = await fetch('/api/v1/commercial/register-tenant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyName: company || `Organização de ${name}`,
+            adminName: name,
+            email,
+            password,
+            plan
+          })
+        });
+
+        if (res.ok) {
+          const payload = await res.json();
+          if (payload.token) {
+            localStorage.setItem('nexus_jwt_token', payload.token);
+          }
+        }
+      } catch {
+        // Modo PWA Offline / Static Fallback
+      }
+
       registerUser(name, email, password, role, company);
-      crmStore.addAuditLog('Novo Usuário Cadastrado', `Usuário "${name}" (${email}) registrado como ${role === 'admin' ? 'Administrador' : 'Funcionário'}.`);
-      logAudit(AUDIT_ACTIONS.USER_REGISTERED, { name, email, role, company });
+      crmStore.addAuditLog('Novo Usuário Cadastrado', `Usuário "${name}" (${email}) registrado no plano ${plan.toUpperCase()}.`);
+      logAudit(AUDIT_ACTIONS.USER_REGISTERED, { name, email, role, company, plan });
       window.hideAuthPortal();
-      showToast(`Conta criada com sucesso! Bem-vindo(a), ${name}!`, "success");
+      showToast(`Conta criada com sucesso! Bem-vindo(a) ao Nexus CRM (${plan.toUpperCase()}), ${name}!`, "success");
     });
   }
+
+  // Tratamento de Deep Linking de Registro e Planos Comerciais (#register?plan=...)
+  const handleAuthHashRouting = () => {
+    const rawHash = window.location.hash || '';
+    if (rawHash.includes('register') || rawHash.includes('checkout')) {
+      window.showAuthPortal();
+      if (tabRegister) tabRegister.click();
+
+      const planMatch = rawHash.match(/plan=([a-zA-Z0-9_-]+)/);
+      const planBadge = document.getElementById('auth-selected-plan-badge');
+      const planLabel = document.getElementById('auth-plan-name-label');
+      const planInput = document.getElementById('reg-input-plan');
+      const roleSelect = document.getElementById('reg-select-role');
+
+      if (planMatch && planBadge && planLabel) {
+        const planKey = planMatch[1].toLowerCase();
+        const planNames = {
+          starter: 'Starter (R$ 97/mês)',
+          pro: 'Professional (R$ 197/mês)',
+          enterprise: 'Enterprise (R$ 497/mês)'
+        };
+        planLabel.textContent = planNames[planKey] || planKey.toUpperCase();
+        planBadge.style.display = 'block';
+        if (planInput) planInput.value = planKey;
+        if (roleSelect) roleSelect.value = 'admin';
+      }
+    }
+  };
+  handleAuthHashRouting();
+  window.addEventListener('hashchange', handleAuthHashRouting);
 
   // Google sign in in portal
   if (btnGooglePortal) {
