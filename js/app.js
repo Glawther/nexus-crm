@@ -93,6 +93,8 @@ import {
   revokeInvite,
   resendInvite,
   generateInviteShareText,
+  getCompanyTeamInviteCode,
+  joinTeamWithInviteCode,
   INVITE_STATUS
 } from './services/team-invite-service.js';
 import {
@@ -298,6 +300,13 @@ function applyRoleUIRestrictions(permissions) {
   if (btnMenuWebhook) btnMenuWebhook.style.display = isAdmin ? 'flex' : 'none';
   if (groupCompany) groupCompany.style.display = isAdmin ? 'block' : 'none';
   if (dividerCompany) dividerCompany.style.display = isAdmin ? 'block' : 'none';
+
+  // Oculta área de faturamento e configuração de PIX para funcionários
+  const subBtn = document.getElementById('sidebar-subscription-btn');
+  if (subBtn) subBtn.style.display = isAdmin ? 'flex' : 'none';
+
+  const adminSettingsSection = document.getElementById('chk-admin-settings-section');
+  if (adminSettingsSection) adminSettingsSection.style.display = isAdmin ? 'block' : 'none';
 
   // 3. Configurações de Nuvem & IA (Gemini / Firebase)
   if (permissions.canAccessCloudConfig) {
@@ -1968,22 +1977,60 @@ function setupAuthPortalEvents() {
     });
   }
 
-  // Form Register submit com suporte a Self-Service Backend e Fallback PWA Offline
+  // Sub-tabs de Registro: Dono de Empresa vs Colaborador com Convite
+  const tabRegOwner = document.getElementById('tab-reg-type-owner');
+  const tabRegEmployee = document.getElementById('tab-reg-type-employee');
+  const regContainerOwner = document.getElementById('reg-container-owner');
+  const regContainerEmployee = document.getElementById('reg-container-employee');
+
+  if (tabRegOwner && tabRegEmployee) {
+    tabRegOwner.addEventListener('click', () => {
+      tabRegOwner.classList.add('active');
+      tabRegOwner.style.borderColor = 'rgba(217, 249, 66, 0.4)';
+      tabRegOwner.style.background = 'rgba(217, 249, 66, 0.12)';
+      tabRegOwner.style.color = '#d9f942';
+
+      tabRegEmployee.classList.remove('active');
+      tabRegEmployee.style.borderColor = 'transparent';
+      tabRegEmployee.style.background = 'transparent';
+      tabRegEmployee.style.color = 'var(--text-secondary)';
+
+      if (regContainerOwner) regContainerOwner.style.display = 'block';
+      if (regContainerEmployee) regContainerEmployee.style.display = 'none';
+    });
+
+    tabRegEmployee.addEventListener('click', () => {
+      tabRegEmployee.classList.add('active');
+      tabRegEmployee.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+      tabRegEmployee.style.background = 'rgba(59, 130, 246, 0.12)';
+      tabRegEmployee.style.color = '#60a5fa';
+
+      tabRegOwner.classList.remove('active');
+      tabRegOwner.style.borderColor = 'transparent';
+      tabRegOwner.style.background = 'transparent';
+      tabRegOwner.style.color = 'var(--text-secondary)';
+
+      if (regContainerOwner) regContainerOwner.style.display = 'none';
+      if (regContainerEmployee) regContainerEmployee.style.display = 'block';
+    });
+  }
+
+  // Form Register: Dono de Empresa (Criação de Tenant / Sempre Administrador)
   if (formRegister) {
     formRegister.addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('btn-submit-register') || formRegister.querySelector('button[type="submit"]');
-      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Criar Conta e Acessar CRM';
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Criar Empresa e Acessar CRM';
 
       const name = document.getElementById('reg-input-name').value.trim();
       const email = document.getElementById('reg-input-email').value.trim();
       const company = document.getElementById('reg-input-company').value.trim();
-      const role = document.getElementById('reg-select-role').value;
       const password = document.getElementById('reg-input-password').value;
       const plan = document.getElementById('reg-input-plan')?.value || 'pro';
+      const role = USER_ROLES.ADMIN; // O Dono é SEMPRE Administrador do Sistema
 
-      if (!name || !email || !password) {
-        showToast("Preencha os campos obrigatórios.", "error");
+      if (!name || !email || !company || !password) {
+        showToast("Preencha todos os campos obrigatórios.", "error");
         return;
       }
 
@@ -1992,7 +2039,6 @@ function setupAuthPortalEvents() {
         return;
       }
 
-      // Feedback visual imediato no botão
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = `
@@ -2000,7 +2046,7 @@ function setupAuthPortalEvents() {
             <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
             </svg>
-            Criando sua conta...
+            Criando sua empresa...
           </span>
         `;
       }
@@ -2008,7 +2054,6 @@ function setupAuthPortalEvents() {
       let backendSuccess = false;
       let backendError = null;
 
-      // Tentativa de provisionamento no backend comercial (Zero Trust API) com Timeout resiliente (5s)
       try {
         const baseUrl = typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : '';
         const controller = new AbortController();
@@ -2018,7 +2063,7 @@ function setupAuthPortalEvents() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            companyName: company || `Organização de ${name}`,
+            companyName: company,
             adminName: name,
             email,
             password,
@@ -2031,20 +2076,20 @@ function setupAuthPortalEvents() {
         const payload = await res.json().catch(() => ({}));
         if (res.ok) {
           backendSuccess = true;
-          if (payload.token) {
-            localStorage.setItem('nexus_jwt_token', payload.token);
-          }
-          if (payload.tenantId) {
-            localStorage.setItem('nexus_tenant_id', payload.tenantId);
+          if (payload.token) localStorage.setItem('nexus_jwt_token', payload.token);
+          if (payload.tenant?.id) localStorage.setItem('nexus_tenant_id', payload.tenant.id);
+          if (payload.tenant?.teamInviteCode) {
+            const org = getSavedOrganization();
+            org.teamInviteCode = payload.tenant.teamInviteCode;
+            saveOrganization(org);
           }
         } else {
           backendError = payload.error || payload.message || 'Falha no cadastro com o servidor.';
         }
       } catch (err) {
-        console.warn('Backend indisponível ou timeout, inicializando em modo local offline:', err);
+        console.warn('Backend indisponível ou timeout, registrando localmente:', err);
       }
 
-      // Se o backend retornou um erro explícito de validação (ex: e-mail já existe)
       if (backendError && !backendSuccess) {
         showToast(`Atenção: ${backendError}`, "error");
         if (submitBtn) {
@@ -2054,15 +2099,13 @@ function setupAuthPortalEvents() {
         return;
       }
 
-      // Registra sessão local e organização
-      registerUser(name, email, password, role, company);
-      crmStore.addAuditLog('Novo Usuário Cadastrado', `Usuário "${name}" (${email}) registrado no plano ${plan.toUpperCase()}.`);
-      logAudit(AUDIT_ACTIONS.USER_REGISTERED, { name, email, role, company, plan });
-      
-      // Oculta portal de autenticação e transiciona UI
+      // Registra sessão de administrador e organização
+      registerUser(name, email, password, USER_ROLES.ADMIN, company);
+      crmStore.addAuditLog('Empresa Cadastrada', `Organização "${company}" criada por "${name}" (${email}) no plano ${plan.toUpperCase()}.`);
+      logAudit(AUDIT_ACTIONS.USER_REGISTERED, { name, email, role: 'admin', company, plan });
+
       window.hideAuthPortal();
 
-      // Limpa hash da URL para evitar recarregar na tela de cadastro
       if (window.location.hash && (window.location.hash.includes('register') || window.location.hash.includes('checkout'))) {
         try {
           history.replaceState(null, '', window.location.pathname);
@@ -2071,17 +2114,101 @@ function setupAuthPortalEvents() {
         }
       }
 
-      // Ativa visualização do Funil de Vendas (Pipeline)
       if (typeof window.navigateToView === 'function') {
         window.navigateToView('pipeline');
       }
 
-      // Força atualização da store reativa
       if (typeof crmStore.emitChange === 'function') {
         crmStore.emitChange();
       }
 
-      showToast(`Conta criada com sucesso! Bem-vindo(a) ao Nexus CRM, ${name}!`, "success");
+      showToast(`Empresa "${company}" criada com sucesso! Bem-vindo(a) Administrador(a) ${name}!`, "success");
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHtml;
+      }
+    });
+  }
+
+  // Form Join Team: Colaborador / Funcionário (Acesso Estritamente Restrito a Convite)
+  const formJoinTeam = document.getElementById('form-auth-join-team');
+  if (formJoinTeam) {
+    formJoinTeam.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('btn-submit-join-team') || formJoinTeam.querySelector('button[type="submit"]');
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Validar Código e Entrar na Equipe 💼';
+
+      const inviteCode = document.getElementById('join-input-code')?.value?.trim().toUpperCase();
+      const name = document.getElementById('join-input-name')?.value?.trim();
+      const email = document.getElementById('join-input-email')?.value?.trim();
+      const password = document.getElementById('join-input-password')?.value;
+
+      if (!inviteCode || !name || !email || !password) {
+        showToast("Preencha todos os campos obrigatórios.", "error");
+        return;
+      }
+
+      if (password.length < 6) {
+        showToast("A senha deve ter no mínimo 6 caracteres.", "warning");
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:8px;">
+            <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+            </svg>
+            Validando convite da empresa...
+          </span>
+        `;
+      }
+
+      const joinResult = await joinTeamWithInviteCode({ inviteCode, name, email, password });
+
+      if (!joinResult.success) {
+        showToast(`❌ ${joinResult.error}`, "error");
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHtml;
+        }
+        return;
+      }
+
+      // Autentica localmente como Colaborador (role: employee) vinculado à empresa do dono
+      setUserRole(USER_ROLES.EMPLOYEE);
+      loginWithEmail(email, password, USER_ROLES.EMPLOYEE);
+      const currentUserObj = getCurrentUser();
+      if (currentUserObj) {
+        currentUserObj.name = name + ' (Consultor)';
+        currentUserObj.email = email;
+        currentUserObj.company = joinResult.org?.name || 'Nexus CRM';
+      }
+
+      crmStore.addAuditLog('Acesso de Colaborador por Convite', `Colaborador "${name}" (${email}) ingressou na equipe via código "${inviteCode}".`);
+      logAudit(AUDIT_ACTIONS.USER_LOGIN, { method: 'invite_code', inviteCode, name, email, role: 'employee' });
+
+      window.hideAuthPortal();
+
+      if (window.location.hash && (window.location.hash.includes('register') || window.location.hash.includes('checkout'))) {
+        try {
+          history.replaceState(null, '', window.location.pathname);
+        } catch {
+          window.location.hash = '#pipeline';
+        }
+      }
+
+      if (typeof window.navigateToView === 'function') {
+        window.navigateToView('pipeline');
+      }
+
+      if (typeof crmStore.emitChange === 'function') {
+        crmStore.emitChange();
+      }
+
+      showToast(`Bem-vindo(a) à equipe, ${name}! Seu perfil de Consultor está ativo.`, "success");
 
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -3516,6 +3643,27 @@ function setupTeamInviteEvents() {
       showToast(result.error, 'error');
     }
   };
+
+  // Card de Código de Acesso da Equipe (Exclusivo do Dono da Empresa)
+  const displayTeamCode = document.getElementById('display-team-invite-code');
+  const btnCopyTeamCode = document.getElementById('btn-copy-team-code');
+  const teamInviteCode = getCompanyTeamInviteCode();
+
+  if (displayTeamCode) {
+    displayTeamCode.textContent = teamInviteCode;
+  }
+
+  if (btnCopyTeamCode) {
+    btnCopyTeamCode.addEventListener('click', () => {
+      const code = displayTeamCode ? displayTeamCode.textContent.trim() : teamInviteCode;
+      const textToCopy = `🚀 *Convite para a Equipe Nexus CRM*\n\nUse o código de acesso abaixo para entrar na equipe da nossa empresa no CRM:\n\n🔑 *Código de Convite:* ${code}\n\nCadastre-se na aba "Sou Colaborador" em: ${window.location.origin}`;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast(`📋 Código ${code} copiado! Envie para seus vendedores pelo WhatsApp.`, 'success');
+      }).catch(() => {
+        showToast(`Código da equipe: ${code}`, 'info');
+      });
+    });
+  }
 
   // Initial render
   renderInvitesList();

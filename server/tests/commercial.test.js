@@ -229,4 +229,54 @@ test('💼 [COMMERCIAL SAAS] Plans, Self-Service Onboarding & Automated Billing 
     const updatedTenant = repo.tenants.get(tenantReg.tenant.id);
     assert.equal(updatedTenant.status, 'canceled');
   });
+
+  await t.test('8. Equipe: Deve permitir que um funcionário entre na empresa via código de convite válido', async () => {
+    // 1. Cadastrar empresa do Dono
+    const ownerReg = await commercialService.registerTenant({
+      companyName: 'Alfa Tech Enterprise',
+      adminName: 'Roberto Dono',
+      email: 'roberto@alfatech.com',
+      password: 'SenhaDono#2026',
+      plan: 'pro'
+    });
+
+    const inviteCode = ownerReg.tenant.teamInviteCode;
+    assert.ok(inviteCode.startsWith('NX-'), 'Deve gerar código de convite corporativo iniciado por NX-');
+
+    // 2. Colaborador ingressa via código de convite
+    const employeeJoin = await commercialService.joinTeam({
+      inviteCode,
+      name: 'Marcos Vendedor',
+      email: 'marcos@alfatech.com',
+      password: 'SenhaVendedor#123'
+    });
+
+    assert.equal(employeeJoin.success, true);
+    assert.equal(employeeJoin.user.role, 'employee');
+    assert.equal(employeeJoin.tenant.id, ownerReg.tenant.id);
+    assert.ok(employeeJoin.token);
+  });
+
+  await t.test('9. Equipe: Deve rejeitar cadastro de funcionário com código de convite inexistente ou inválido', async () => {
+    await assert.rejects(
+      () => commercialService.joinTeam({
+        inviteCode: 'NX-INVALIDO-999',
+        name: 'Tentativa Invasor',
+        email: 'invasor@hacker.com',
+        password: 'SenhaHacker123'
+      }),
+      /Código de convite inválido ou não autorizado/
+    );
+
+    // Sem código de convite
+    await assert.rejects(
+      () => commercialService.joinTeam({
+        inviteCode: '',
+        name: 'Tentativa Sem Codigo',
+        email: 'semcodigo@hacker.com',
+        password: 'SenhaHacker123'
+      }),
+      /Código de convite obrigatório/
+    );
+  });
 });

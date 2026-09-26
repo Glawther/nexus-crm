@@ -4,7 +4,7 @@
  * manage roles and track invitation status.
  */
 
-import { getSavedOrganization } from '../core/config.js';
+import { getSavedOrganization, saveOrganization } from '../core/config.js';
 import { getCurrentUser, isAdmin, USER_ROLES } from './auth-service.js';
 import { logAudit, AUDIT_ACTIONS, AUDIT_SEVERITY } from './audit-service.js';
 import { generateTemporaryPassword, saveEmployee, getEmployees } from './employee-service.js';
@@ -260,3 +260,126 @@ function generateAccessCode() {
   }
   return code;
 }
+
+/**
+ * Returns or generates the active organization's master team invite code
+ */
+export function getCompanyTeamInviteCode() {
+  const org = getSavedOrganization();
+  if (org && org.teamInviteCode) {
+    return org.teamInviteCode;
+  }
+  const code = 'NX-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+  if (org) {
+    org.teamInviteCode = code;
+    saveOrganization(org);
+  }
+  return code;
+}
+
+/**
+ * Validates a team invitation code locally and against active organization
+ */
+export function validateTeamInviteCode(code) {
+  if (!code) return { valid: false, error: 'Código de convite obrigatório.' };
+  const cleanCode = code.trim().toUpperCase();
+
+  // 1. Check active organization master invite code
+  const org = getSavedOrganization();
+  const orgCode = org?.teamInviteCode || getCompanyTeamInviteCode();
+  if (orgCode && orgCode.toUpperCase() === cleanCode) {
+    return { valid: true, type: 'org_code', org };
+  }
+
+  // 2. Check individual invitations
+  const invites = getInvites();
+  const invite = invites.find(i => (i.accessCode && i.accessCode.toUpperCase() === cleanCode) || i.id === cleanCode);
+  if (invite) {
+    if (invite.status !== INVITE_STATUS.PENDING) {
+      return { valid: false, error: 'Este convite já foi utilizado ou não está mais ativo.' };
+    }
+    if (new Date(invite.expiresAt) < new Date()) {
+      return { valid: false, error: 'Este convite expirou. Solicite um novo ao administrador da empresa.' };
+    }
+    return { valid: true, type: 'invite', invite, org };
+  }
+
+  // 3. Fallback candidate for cloud validation
+  if (cleanCode.startsWith('NX-') && cleanCode.length >= 6) {
+    return { valid: true, type: 'cloud_candidate', code: cleanCode, org };
+  }
+
+  return { valid: false, error: 'Código de convite não encontrado ou inválido. Solicite o código ao dono da sua empresa.' };
+}
+
+/**
+ * Joins an employee to a company team using their invitation code
+ */
+export async function joinTeamWithInviteCode({ inviteCode, name, email, password }) {
+  const check = validateTeamInviteCode(inviteCode);
+  const baseUrl = typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : '';
+
+  // 1. Attempt backend join
+  let cloudSuccess = false;
+  let cloudError = null;
+  let serverData = null;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`${baseUrl}/api/v1/commercial/join-team`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        inviteCode: inviteCode.trim().toUpperCase(),
+        name,
+        email,
+        password
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    const payload = await res.json().catch(() => ({}));
+    if (res.ok) {
+      cloudSuccess = true;
+      serverData = payload;
+      if (payload.token) localStorage.setItem('nexus_jwt_token', payload.token);
+      if (payload.tenant?.id) localStorage.setItem('nexus_tenant_id', payload.tenant.id);
+    } else {
+      cloudError = payload.error || 'Código de convite inválido no servidor.';
+    }
+  } catch (err) {
+    console.warn('[Join Team] Backend offline ou indisponível, validando localmente:', err);
+  }
+
+  // Se o servidor respondeu com erro explícito de código inválido
+  if (cloudError && !cloudSuccess) {
+    return { success: false, error: cloudError };
+  }
+
+  // 2. Validação local caso o backend não esteja disponível
+  if (!check.valid && !cloudSuccess) {
+    return { success: false, error: check.error || 'Código de convite inválido.' };
+  }
+
+  const org = check.org || getSavedOrganization();
+
+  // Create or accept employee
+  if (check.type === 'invite' && check.invite) {
+    acceptInvite(check.invite.id);
+  } else {
+    saveEmployee({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      cpf: '',
+      role: USER_ROLES.EMPLOYEE,
+      department: 'Vendas',
+      status: 'active',
+      isFirstAccess: false,
+      orgId: org.id
+    });
+  }
+
+  return { success: true, org, role: USER_ROLES.EMPLOYEE, serverData };
+}
+

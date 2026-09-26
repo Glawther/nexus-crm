@@ -106,45 +106,85 @@
         </div>
       </div>
 
-      <!-- TAB 2: FORMULÁRIO DE REGISTRO (CRIAR CONTA) -->
+      <!-- TAB 2: FORMULÁRIO DE REGISTRO (CRIAR EMPRESA OU ENTRAR VIA CONVITE) -->
       <div id="auth-panel-register" style="display: none;">
-        <div id="auth-selected-plan-badge" style="display: none; margin-bottom: 0.85rem; padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; background: rgba(217, 249, 66, 0.12); color: #d9f942; border: 1px solid rgba(217, 249, 66, 0.3); text-align: center;">
-          ⚡ Plano Selecionado: <span id="auth-plan-name-label">Professional</span>
-        </div>
-        <form id="form-auth-register">
-          <input type="hidden" id="reg-input-plan" value="pro">
-          <div class="form-group" style="margin-bottom: 0.85rem;">
-            <label for="reg-input-name">Nome Completo *</label>
-            <input type="text" id="reg-input-name" class="form-input" placeholder="Ex: Rodrigo Fagundes" required>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 0.85rem;">
-            <label for="reg-input-email">E-mail Corporativo *</label>
-            <input type="email" id="reg-input-email" class="form-input" placeholder="rodrigo@suaempresa.com" required>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 0.85rem;">
-            <label for="reg-input-company">Nome da Empresa</label>
-            <input type="text" id="reg-input-company" class="form-input" placeholder="Ex: Inova Soluções B2B">
-          </div>
-
-          <div class="form-group" style="margin-bottom: 0.85rem;">
-            <label for="reg-select-role">Papel na Empresa (Tríade CID) *</label>
-            <select id="reg-select-role" class="form-select">
-              <option value="employee" selected>💼 Funcionário / Consultor de Vendas (Acesso à Carteira)</option>
-              <option value="admin">🛡️ Administrador do Sistema (Gestão Total &amp; Segurança)</option>
-            </select>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label for="reg-input-password">Criar Senha *</label>
-            <input type="password" id="reg-input-password" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
-          </div>
-
-          <button type="submit" id="btn-submit-register" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px;">
-            Criar Conta e Acessar CRM
+        
+        <!-- Seletor de Perfil de Registro: Dono de Empresa vs Colaborador -->
+        <div style="display: flex; gap: 8px; margin-bottom: 1.15rem; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <button type="button" id="tab-reg-type-owner" class="auth-reg-toggle-btn active" style="flex: 1; padding: 8px 6px; border-radius: 7px; border: 1px solid rgba(217, 249, 66, 0.4); background: rgba(217, 249, 66, 0.12); color: #d9f942; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; text-align: center;">
+            🏢 Dono de Empresa<br><span style="font-size: 0.7rem; font-weight: 400; opacity: 0.85;">Cadastrar Empresa</span>
           </button>
-        </form>
+          <button type="button" id="tab-reg-type-employee" class="auth-reg-toggle-btn" style="flex: 1; padding: 8px 6px; border-radius: 7px; border: 1px solid transparent; background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; text-align: center;">
+            💼 Sou Colaborador<br><span style="font-size: 0.7rem; font-weight: 400; opacity: 0.85;">Entrar com Convite</span>
+          </button>
+        </div>
+
+        <!-- FORMULÁRIO 1: DONO DE EMPRESA (ADMINISTRADOR DO SISTEMA) -->
+        <div id="reg-container-owner">
+          <div id="auth-selected-plan-badge" style="display: none; margin-bottom: 0.85rem; padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; background: rgba(217, 249, 66, 0.12); color: #d9f942; border: 1px solid rgba(217, 249, 66, 0.3); text-align: center;">
+            ⚡ Plano Selecionado: <span id="auth-plan-name-label">Professional</span>
+          </div>
+
+          <form id="form-auth-register">
+            <input type="hidden" id="reg-input-plan" value="pro">
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label for="reg-input-name">Nome do Dono / Administrador *</label>
+              <input type="text" id="reg-input-name" class="form-input" placeholder="Ex: Rodrigo Fagundes" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label for="reg-input-email">E-mail Corporativo *</label>
+              <input type="email" id="reg-input-email" class="form-input" placeholder="rodrigo@suaempresa.com" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label for="reg-input-company">Nome da Sua Empresa *</label>
+              <input type="text" id="reg-input-company" class="form-input" placeholder="Ex: Inova Soluções B2B" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label for="reg-input-password">Criar Senha de Administrador *</label>
+              <input type="password" id="reg-input-password" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
+            </div>
+
+            <button type="submit" id="btn-submit-register" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px;">
+              Criar Empresa e Acessar CRM (Admin 🛡️)
+            </button>
+          </form>
+        </div>
+
+        <!-- FORMULÁRIO 2: COLABORADOR / FUNCIONÁRIO (EXIGE CÓDIGO DO DONO) -->
+        <div id="reg-container-employee" style="display: none;">
+          <div style="margin-bottom: 1rem; padding: 10px 12px; border-radius: 8px; font-size: 0.78rem; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); color: #93c5fd; line-height: 1.4;">
+            🔒 <strong>Acesso Protegido por Convite:</strong> Digite o <strong>Código de Convite</strong> fornecido pelo dono da sua empresa para liberar seu acesso ao CRM.
+          </div>
+
+          <form id="form-auth-join-team">
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label for="join-input-code" style="color: #d9f942; font-weight: 700;">🔑 Código de Convite da Empresa *</label>
+              <input type="text" id="join-input-code" class="form-input" placeholder="Ex: NX-8492" required style="font-family: monospace; letter-spacing: 1px; font-weight: 700; text-transform: uppercase;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label for="join-input-name">Seu Nome Completo *</label>
+              <input type="text" id="join-input-name" class="form-input" placeholder="Ex: Lucas Mendes" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label for="join-input-email">Seu E-mail Corporativo *</label>
+              <input type="email" id="join-input-email" class="form-input" placeholder="lucas@empresa.com" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label for="join-input-password">Criar Senha de Acesso *</label>
+              <input type="password" id="join-input-password" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
+            </div>
+
+            <button type="submit" id="btn-submit-join-team" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px;">
+              Validar Código e Entrar na Equipe 💼
+            </button>
+          </form>
+        </div>
       </div>
 
       <div style="margin-top: 1.25rem; text-align: center;">
@@ -729,6 +769,27 @@
                 <div class="team-stat-value" id="stat-admin-count">1</div>
                 <div class="team-stat-label">Administradores</div>
               </div>
+            </div>
+          </div>
+
+          <!-- Card de Código Rápido de Convite da Empresa (Exclusivo do Dono) -->
+          <div class="team-invite-code-card" style="background: linear-gradient(135deg, rgba(217,249,66,0.08), rgba(59,130,246,0.05)); border: 1px solid rgba(217,249,66,0.25); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #d9f942; font-size: 0.95rem;">
+                <span>🔑 Código de Acesso da sua Equipe</span>
+                <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; background: rgba(217,249,66,0.2); color: #d9f942; font-weight: 700;">Dono da Empresa</span>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0 0 0;">
+                Envie este código aos seus consultores e vendedores. Eles só conseguem criar conta no CRM com este código!
+              </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="display-team-invite-code" style="font-family: monospace; font-size: 1.25rem; font-weight: 800; letter-spacing: 2px; color: #fff; background: rgba(0,0,0,0.45); padding: 8px 18px; border-radius: 8px; border: 1px dashed rgba(217,249,66,0.6);">
+                NX-8492
+              </span>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-copy-team-code" style="gap: 6px; font-weight: 600;">
+                📋 Copiar Código
+              </button>
             </div>
           </div>
 
@@ -2244,8 +2305,8 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
         </div>
       </div>
 
-      <!-- Admin Payment & Cloud Configuration Drawer (Visible for Admins) -->
-      <div id="chk-admin-settings-section" style="margin-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
+      <!-- Admin Payment & Cloud Configuration Drawer (Visible for Admins ONLY) -->
+      <div id="chk-admin-settings-section" style="display: none; margin-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
         <button type="button" id="btn-toggle-payment-settings" class="btn btn-outline btn-sm" style="width: 100%; justify-content: center; gap: 6px; font-size: 0.75rem; border-color: rgba(255,255,255,0.15);">
           <span>⚙️ Configurar Meu PIX Real &amp; Backend na Nuvem (Admin)</span>
         </button>
@@ -2297,7 +2358,7 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
   <input type="file" id="backup-file-input" style="display: none;" accept=".json">
 
   <!-- Entry Point Script -->
-  <script type="module" src="js/app.js?v=2.3.2"></script>
+  <script type="module" src="js/app.js?v=2.4.0"></script>
 
 </body>
 </html>

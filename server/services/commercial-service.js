@@ -104,6 +104,7 @@ class CommercialService {
     const tenantId = crypto.randomUUID();
     const trialDays = selectedPlan.trialDays || 7;
     const trialEndsAt = new Date(Date.now() + (trialDays * 24 * 60 * 60 * 1000)).toISOString();
+    const teamInviteCode = 'NX-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
     const tenant = {
       id: tenantId,
@@ -115,6 +116,7 @@ class CommercialService {
       trial_ends_at: trialEndsAt,
       max_users: selectedPlan.maxUsers,
       max_leads: selectedPlan.maxLeads,
+      team_invite_code: teamInviteCode,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -190,13 +192,121 @@ class CommercialService {
         slug: tenant.slug,
         plan: tenant.plan,
         maxUsers: tenant.max_users,
-        maxLeads: tenant.max_leads
+        maxLeads: tenant.max_leads,
+        teamInviteCode: tenant.team_invite_code
       },
       user: {
         id: adminUser.id,
         name: adminUser.name,
         email: adminUser.email,
         role: adminUser.role
+      },
+      token: sessionToken,
+      tokenType: 'Bearer'
+    };
+  }
+
+  /**
+   * Allows an invited employee to join an existing company team via a verified invitation code
+   */
+  async joinTeam({ inviteCode, name, email, password }, clientIp = '127.0.0.1') {
+    if (!inviteCode || typeof inviteCode !== 'string' || inviteCode.trim().length < 4) {
+      throw new Error('Código de convite obrigatório. Solicite o código ao dono da sua empresa.');
+    }
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      throw new Error('O nome do colaborador é obrigatório.');
+    }
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      throw new Error('E-mail corporativo inválido.');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('A senha deve possuir no mínimo 6 caracteres.');
+    }
+
+    const cleanCode = inviteCode.trim().toUpperCase();
+
+    // Find tenant by team_invite_code
+    let targetTenant = null;
+    for (const t of this.repository.tenants.values()) {
+      if (t.team_invite_code && t.team_invite_code.toUpperCase() === cleanCode) {
+        targetTenant = t;
+        break;
+      }
+    }
+
+    if (!targetTenant) {
+      throw new Error('Código de convite inválido ou não autorizado. Solicite o código de acesso ao dono da sua empresa.');
+    }
+
+    // Check user limit quota for this tenant
+    const existingUsers = Array.from(this.repository.users.values()).filter(u => u.tenant_id === targetTenant.id);
+    if (existingUsers.length >= (targetTenant.max_users || 10)) {
+      throw new Error(`O limite de usuários (${targetTenant.max_users}) do plano da empresa foi atingido. O administrador deve fazer upgrade do plano.`);
+    }
+
+    // Check if email is already in use in this tenant
+    const emailLower = email.toLowerCase().trim();
+    const duplicateUser = Array.from(this.repository.users.values()).find(
+      u => u.tenant_id === targetTenant.id && u.email === emailLower
+    );
+    if (duplicateUser) {
+      throw new Error('Este e-mail já está cadastrado nesta empresa.');
+    }
+
+    // Hash password
+    const passwordHash = await hashPassword(password);
+
+    // Create Employee User in Target Tenant
+    const sysContext = new SecurityContext({
+      tenantId: targetTenant.id,
+      userId: 'invite-system',
+      role: 'admin',
+      ipAddress: clientIp
+    });
+
+    const employeeUser = await this.repository.createUser(sysContext, {
+      name: name.trim(),
+      email: emailLower,
+      password_hash: passwordHash,
+      role: 'employee'
+    });
+
+    auditService.log({
+      tenantId: targetTenant.id,
+      actorId: employeeUser.id,
+      actorRole: 'employee',
+      action: 'TEAM:MEMBER_JOINED',
+      entityType: 'USER',
+      entityId: employeeUser.id,
+      ipAddress: clientIp,
+      severity: SEVERITY.INFO,
+      newValues: { name: employeeUser.name, email: employeeUser.email, role: 'employee', viaInviteCode: cleanCode }
+    });
+
+    const sessionToken = generateSessionToken({
+      tenant_id: targetTenant.id,
+      tenantId: targetTenant.id,
+      user_id: employeeUser.id,
+      userId: employeeUser.id,
+      role: 'employee',
+      name: employeeUser.name,
+      email: employeeUser.email
+    });
+
+    return {
+      success: true,
+      message: `Bem-vindo(a) à equipe da empresa "${targetTenant.name}"!`,
+      tenant: {
+        id: targetTenant.id,
+        name: targetTenant.name,
+        slug: targetTenant.slug,
+        plan: targetTenant.plan
+      },
+      user: {
+        id: employeeUser.id,
+        name: employeeUser.name,
+        email: employeeUser.email,
+        role: employeeUser.role
       },
       token: sessionToken,
       tokenType: 'Bearer'
@@ -348,6 +458,7 @@ class CommercialService {
     return {
       tenantId: tenant.id,
       companyName: tenant.name,
+      teamInviteCode: tenant.team_invite_code,
       plan: plan.id,
       planName: plan.name,
       status: tenant.status,

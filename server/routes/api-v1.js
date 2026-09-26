@@ -126,6 +126,17 @@ async function handleApiV1(req, res, parsedUrl) {
     }
   }
 
+  // POST /api/v1/commercial/join-team (Employee joins via company invite code)
+  if (parsedUrl === '/api/v1/commercial/join-team' && method === 'POST') {
+    try {
+      const { body } = await parseJsonBody(req);
+      const result = await commercialService.joinTeam(body, clientIp);
+      return sendJson(res, 201, result);
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
   // POST /api/v1/commercial/billing-webhook (Automated Recurring Subscriptions)
   if (parsedUrl === '/api/v1/commercial/billing-webhook' && method === 'POST') {
     try {
