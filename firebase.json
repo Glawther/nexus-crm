@@ -46,11 +46,29 @@
         ]
       },
       {
+        "source": "sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(html|htm)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, must-revalidate"
+          }
+        ]
+      },
+      {
         "source": "**/*.@(js|css|woff2|png|svg)",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=86400, stale-while-revalidate=43200"
+            "value": "max-age=3600, must-revalidate"
           }
         ]
       }
