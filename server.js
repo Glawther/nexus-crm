@@ -13,6 +13,7 @@ const {
   handleAcknowledgeLeads
 } = require('./server/controllers/webhook-controller');
 const { handleStaticFile } = require('./server/controllers/static-controller');
+const { handleApiV1 } = require('./server/routes/api-v1');
 
 // Initialize local storage files & directories
 initStorage();
@@ -29,7 +30,12 @@ const server = http.createServer((req, res) => {
 
   const parsedUrl = (req.url || '/').split('?')[0];
 
-  // API Routes
+  // Zero Trust API v1 (Multitenant, RBAC, DLP, Audit, Crypto)
+  if (parsedUrl.startsWith('/api/v1/')) {
+    return handleApiV1(req, res, parsedUrl);
+  }
+
+  // Legacy Webhook Routes
   if (parsedUrl === '/api/webhook/leads' && req.method === 'POST') {
     return handleIngestLead(req, res);
   }

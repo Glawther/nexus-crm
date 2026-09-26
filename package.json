@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node server.js || python -m http.server 3000",
     "start": "node server.js || python -m http.server 3000",
+    "test": "node --test server/tests/security.test.js",
     "deploy": "npx -y firebase-tools deploy --only hosting"
   },
   "keywords": [
