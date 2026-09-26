@@ -3,11 +3,12 @@
  * Tríade CID: Disponibilidade (D)
  */
 
-const CACHE_NAME = 'nexus-crm-v2.0.0';
+const CACHE_NAME = 'nexus-crm-v2.0.2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/landing.html',
+  '/landing',
   '/manifest.json',
   '/assets/icon.svg',
   '/css/design-tokens.css',
@@ -49,22 +50,27 @@ const STATIC_ASSETS = [
   '/js/ui-renderer.js'
 ];
 
-// Install: Cache core application assets
+// Install: Cache core application assets safely without failing if one asset 404s
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.allSettled(
+        STATIC_ASSETS.map((url) => cache.add(url).catch((err) => {
+          console.warn(`[Nexus PWA] Cache skip for ${url}:`, err.message);
+        }))
+      );
     }).then(() => self.skipWaiting())
   );
 });
 
-// Activate: Clean up older cache versions
+// Activate: Clean up older cache versions and take immediate control
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log(`[Nexus PWA] Removendo cache legado: ${key}`);
             return caches.delete(key);
           }
         })
@@ -75,6 +81,11 @@ self.addEventListener('activate', (event) => {
 
 // Fetch: Stale-While-Revalidate for app assets; Network-only for Google Cloud APIs
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   const url = new URL(event.request.url);
 
   // Do not intercept or cache Google Cloud / Firebase / Gemini real-time requests
@@ -87,40 +98,63 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle local app shell requests
+  // 1. Special handling for navigation requests (HTML pages)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      (async () => {
+        const isLanding = url.pathname.includes('landing');
+        try {
+          // If user requests /landing.html or /landing, target /landing directly
+          const targetUrl = isLanding ? new URL('/landing', url.origin).href : event.request.url;
+          const networkResponse = await fetch(targetUrl, {
+            headers: event.request.headers,
+            credentials: event.request.credentials
+          });
+          if (networkResponse && (networkResponse.ok || networkResponse.status === 304)) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, networkResponse.clone()).catch(() => {});
+            return networkResponse;
+          }
+          if (networkResponse && networkResponse.status >= 300 && networkResponse.status < 400) {
+            return networkResponse;
+          }
+        } catch (err) {
+          // Network failed or offline - proceed to offline fallback
+        }
+
+        const fallbackTarget = isLanding ? '/landing' : '/index.html';
+        const cachedFallback = (await caches.match(event.request, { ignoreSearch: true })) ||
+                               (await caches.match(fallbackTarget, { ignoreSearch: true })) ||
+                               (await caches.match('/landing.html', { ignoreSearch: true }));
+
+        if (cachedFallback) {
+          return cachedFallback;
+        }
+
+        return new Response('Offline - Nexus CRM', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+      })()
+    );
+    return;
+  }
+
+  // 2. Stale-While-Revalidate for static assets
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch new version in background (Stale-While-Revalidate)
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, networkResponse.clone());
-            });
-          }
-        }).catch(() => {
-          // Offline, use cached
-        });
-        return cachedResponse;
-      }
-
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone()).catch(() => {});
+          });
         }
-
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-
         return networkResponse;
       }).catch(() => {
-        // Fallback for navigation requests when offline
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html', { ignoreSearch: true });
-        }
+        // Offline, silent
       });
+
+      return cachedResponse || fetchPromise;
     })
   );
 });
