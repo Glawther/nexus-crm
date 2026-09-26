@@ -166,6 +166,7 @@ async function initApp() {
     applyWhitelabelStyles();
     setupWhitelabelEvents();
     setupBillingEvents();
+    setupLegacyCheckoutDialogEvents();
     setupCheckoutModalEvents();
     setupTeamInviteEvents();
     setupAuditTrailView();
@@ -2902,6 +2903,9 @@ function setupEmployeeManagementEvents() {
 // Billing & Subscription Events
 // ==========================================================================
 function setupBillingEvents() {
+  window.openSubscriptionModal = function() {
+    if (window.openCheckoutModal) window.openCheckoutModal();
+  };
   const dialog = document.getElementById('billing-dialog');
   const btnOpen = document.getElementById('btn-menu-billing');
   const btnClose = document.getElementById('btn-close-billing-dialog');
@@ -2992,7 +2996,7 @@ function setupBillingEvents() {
 // ==========================================================================
 // Checkout & Payment Gateway Events (PIX Instantâneo & Cartão de Crédito)
 // ==========================================================================
-function setupCheckoutModalEvents() {
+function setupLegacyCheckoutDialogEvents() {
   const dialog = document.getElementById('checkout-dialog');
   const btnClose = document.getElementById('btn-close-checkout-dialog');
   const mainGrid = document.getElementById('checkout-main-grid');
@@ -3638,15 +3642,6 @@ function setupNotificationCenter() {
 
   // Initial state
   updateBadge();
-}
-
-// ==========================================================================
-// Billing & Commercial Subscription Management
-// ==========================================================================
-function setupBillingEvents() {
-  window.openSubscriptionModal = function() {
-    if (window.openCheckoutModal) window.openCheckoutModal();
-  };
 }
 
 // ==========================================================================
