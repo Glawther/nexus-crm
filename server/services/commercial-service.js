@@ -62,11 +62,14 @@ class CommercialService {
     const {
       companyName,
       slug,
-      adminName,
+      adminName: rawAdminName,
+      name,
       email,
       password,
       plan = 'pro'
     } = params;
+
+    const adminName = rawAdminName || name;
 
     // 1. Input Validation
     if (!companyName || typeof companyName !== 'string' || companyName.trim().length < 2) {
