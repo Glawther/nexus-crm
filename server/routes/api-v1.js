@@ -159,6 +159,14 @@ async function handleApiV1(req, res, parsedUrl) {
     }
   }
 
+  // GET /api/v1/commercial/payment-settings (Payment methods & public settings)
+  if (parsedUrl === '/api/v1/commercial/payment-settings' && method === 'GET') {
+    return sendJson(res, 200, {
+      success: true,
+      settings: commercialService.getPaymentSettings()
+    });
+  }
+
   // 3. AUTHENTICATED ZERO TRUST ROUTES (Require valid Bearer token & active Tenant)
   const authResult = await authenticateContext(req, res, defaultRepository);
   if (!authResult.success) {
@@ -166,6 +174,20 @@ async function handleApiV1(req, res, parsedUrl) {
   }
 
   const context = authResult.context;
+
+  // POST /api/v1/commercial/payment-settings (Admin only: updates merchant PIX key & gateways)
+  if (parsedUrl === '/api/v1/commercial/payment-settings' && method === 'POST') {
+    if (context.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Apenas administradores podem configurar o recebimento de pagamentos.' });
+    }
+    try {
+      const { body } = await parseJsonBody(req);
+      const updated = commercialService.updatePaymentSettings(body);
+      return sendJson(res, 200, { success: true, settings: updated });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
 
   // ROUTE: GET /api/v1/commercial/subscription (Quotas, Plan, Trial Status)
   if (parsedUrl === '/api/v1/commercial/subscription' && method === 'GET') {

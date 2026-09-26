@@ -372,6 +372,41 @@ class CommercialService {
   async createCheckout(params) {
     return this.billingAdapter.createCheckoutSession(params);
   }
+
+  /**
+   * Retrieves active payment receiving settings (PIX key, WhatsApp, gateways)
+   */
+  getPaymentSettings() {
+    return {
+      provider: this.billingAdapter.provider,
+      pixKey: this.billingAdapter.pixKey,
+      pixName: this.billingAdapter.pixName,
+      pixCity: this.billingAdapter.pixCity,
+      supportWhatsapp: this.billingAdapter.supportWhatsapp,
+      hasMercadoPago: !!this.billingAdapter.mercadoPagoToken,
+      hasAsaas: !!this.billingAdapter.asaasApiKey,
+      checkoutUrls: this.billingAdapter.checkoutUrls
+    };
+  }
+
+  /**
+   * Updates commercial payment settings (Admin only)
+   */
+  updatePaymentSettings(settings = {}) {
+    if (settings.pixKey !== undefined) this.billingAdapter.pixKey = settings.pixKey;
+    if (settings.pixName !== undefined) this.billingAdapter.pixName = settings.pixName;
+    if (settings.pixCity !== undefined) this.billingAdapter.pixCity = settings.pixCity;
+    if (settings.supportWhatsapp !== undefined) this.billingAdapter.supportWhatsapp = settings.supportWhatsapp;
+    if (settings.mercadoPagoToken !== undefined) this.billingAdapter.mercadoPagoToken = settings.mercadoPagoToken;
+    if (settings.asaasApiKey !== undefined) this.billingAdapter.asaasApiKey = settings.asaasApiKey;
+    if (settings.checkoutUrls) {
+      this.billingAdapter.checkoutUrls = {
+        ...this.billingAdapter.checkoutUrls,
+        ...settings.checkoutUrls
+      };
+    }
+    return this.getPaymentSettings();
+  }
 }
 
 const commercialService = new CommercialService();

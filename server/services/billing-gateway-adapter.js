@@ -8,19 +8,30 @@ const crypto = require('crypto');
 
 class BillingGatewayAdapter {
   constructor(config = {}) {
-    this.provider = config.provider || process.env.BILLING_PROVIDER || 'asaas';
+    this.provider = config.provider || process.env.BILLING_PROVIDER || 'direct_pix';
     this.apiKey = config.apiKey || process.env.BILLING_API_KEY || '';
+    this.mercadoPagoToken = config.mercadoPagoToken || process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
+    this.asaasApiKey = config.asaasApiKey || process.env.ASAAS_API_KEY || '';
+    this.pixKey = config.pixKey || process.env.PIX_KEY || 'contato@nexuscrm.com.br';
+    this.pixName = config.pixName || process.env.PIX_MERCHANT_NAME || 'NEXUS CRM ENTERPRISE';
+    this.pixCity = config.pixCity || process.env.PIX_CITY || 'SAO PAULO';
+    this.supportWhatsapp = config.supportWhatsapp || process.env.SUPPORT_WHATSAPP || '5511999999999';
+    this.checkoutUrls = {
+      starter: config.checkoutStarterUrl || process.env.CHECKOUT_STARTER_URL || 'https://pay.kiwify.com.br/starter-demo',
+      pro: config.checkoutProUrl || process.env.CHECKOUT_PRO_URL || 'https://pay.kiwify.com.br/pro-demo',
+      enterprise: config.checkoutEnterpriseUrl || process.env.CHECKOUT_ENTERPRISE_URL || 'https://pay.kiwify.com.br/enterprise-demo'
+    };
     this.webhookSecret = config.webhookSecret || process.env.WEBHOOK_HMAC_SECRET || 'nexus_whsec_default_2026';
-    this.environment = config.environment || process.env.NODE_ENV === 'production' ? 'production' : 'sandbox';
+    this.environment = config.environment || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox');
   }
 
   /**
    * Generates standard BR Code PIX (EMVCo) compatible string for 1-click PIX payments
    */
   generatePixPayload({ pixKey, recipientName, recipientCity, amount, txId }) {
-    const cleanKey = pixKey || 'contato@nexuscrm.com.br';
-    const cleanName = (recipientName || 'NEXUS CRM ENTERPRISE').substring(0, 25).toUpperCase();
-    const cleanCity = (recipientCity || 'SAO PAULO').substring(0, 15).toUpperCase();
+    const cleanKey = pixKey || this.pixKey || 'contato@nexuscrm.com.br';
+    const cleanName = (recipientName || this.pixName || 'NEXUS CRM ENTERPRISE').substring(0, 25).toUpperCase();
+    const cleanCity = (recipientCity || this.pixCity || 'SAO PAULO').substring(0, 15).toUpperCase();
     const cleanAmount = Number(amount || 0).toFixed(2);
     const cleanTxId = (txId || crypto.randomBytes(8).toString('hex')).substring(0, 25);
 
@@ -69,6 +80,70 @@ class BillingGatewayAdapter {
   }
 
   /**
+   * Generates WhatsApp receipt link for instant payment verification & activation
+   */
+  generateWhatsAppConfirmationUrl({ tenantId, plan, amount, txId, customPhone }) {
+    const phone = (customPhone || this.supportWhatsapp || '5511999999999').replace(/\D/g, '');
+    const cleanPhone = phone.startsWith('55') ? phone : `55${phone}`;
+    const text = encodeURIComponent(
+      `Olá! Acabei de realizar o pagamento PIX da assinatura do Nexus CRM 🚀\n\n` +
+      `📌 Detalhes da Assinatura:\n` +
+      `• Plano: ${plan.toUpperCase()}\n` +
+      `• Valor: R$ ${Number(amount).toFixed(2).replace('.', ',')}\n` +
+      `• ID da Transação: ${txId}\n` +
+      `• Tenant ID: ${tenantId}\n\n` +
+      `Estou enviando o comprovante em anexo para ativação imediata!`
+    );
+    return `https://wa.me/${cleanPhone}?text=${text}`;
+  }
+
+  /**
+   * Generates real dynamic PIX using Mercado Pago Official API if configured
+   */
+  async createMercadoPagoPix({ tenantId, plan, amount, customer, txId }) {
+    if (!this.mercadoPagoToken) return null;
+    try {
+      const response = await fetch('https://api.mercadopago.com/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.mercadoPagoToken}`,
+          'X-Idempotency-Key': txId
+        },
+        body: JSON.stringify({
+          transaction_amount: Number(amount),
+          description: `Nexus CRM - Assinatura Plano ${plan.toUpperCase()}`,
+          payment_method_id: 'pix',
+          payer: {
+            email: customer?.email || 'cliente@nexuscrm.com.br',
+            first_name: customer?.name?.split(' ')[0] || 'Cliente',
+            last_name: customer?.name?.split(' ').slice(1).join(' ') || 'Nexus'
+          },
+          external_reference: tenantId
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const pixData = data.point_of_interaction?.transaction_data;
+        if (pixData?.qr_code) {
+          return {
+            copyPaste: pixData.qr_code,
+            qrCodeUrl: pixData.qr_code_base64 
+              ? `data:image/png;base64,${pixData.qr_code_base64}`
+              : `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(pixData.qr_code)}`,
+            paymentId: data.id,
+            gateway: 'mercadopago'
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('[MercadoPago] Not reachable, fallback to direct EMVCo PIX:', err.message);
+    }
+    return null;
+  }
+
+  /**
    * Creates Checkout Order for Tenant (supports PIX & Credit Card)
    */
   async createCheckoutSession({ tenantId, plan, billingCycle = 'monthly', customer }) {
@@ -82,20 +157,33 @@ class BillingGatewayAdapter {
     const amount = billingCycle === 'annual' ? targetPlan.annual : targetPlan.monthly;
     const txId = `NX-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`.toUpperCase();
 
-    // Generate Instant PIX Copy & Paste
-    const pixCopyPaste = this.generatePixPayload({
-      pixKey: 'pix@nexuscrm.com.br',
-      recipientName: 'NEXUS CRM SAAS',
-      recipientCity: 'SAO PAULO',
+    // 1. Try real dynamic Mercado Pago PIX if access token is configured
+    let dynamicPix = null;
+    if (this.mercadoPagoToken) {
+      dynamicPix = await this.createMercadoPagoPix({ tenantId, plan, amount, customer, txId });
+    }
+
+    // 2. Direct Central Bank PIX (EMVCo BR Code with exact key and merchant data)
+    const pixCopyPaste = dynamicPix?.copyPaste || this.generatePixPayload({
+      pixKey: this.pixKey,
+      recipientName: this.pixName,
+      recipientCity: this.pixCity,
       amount,
       txId
     });
 
+    const qrCodeUrl = dynamicPix?.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(pixCopyPaste)}`;
     const expiresAt = new Date(Date.now() + (24 * 60 * 60 * 1000)).toISOString(); // 24h
+
+    // 3. Card Checkout URL (from config, Kiwify, Stripe, or default)
+    const cardCheckoutUrl = this.checkoutUrls[plan] || this.checkoutUrls.pro || `/checkout?plan=${plan}&cycle=${billingCycle}&tenant=${tenantId}`;
+
+    // 4. WhatsApp confirmation link for 1-click receipt dispatch
+    const whatsappUrl = this.generateWhatsAppConfirmationUrl({ tenantId, plan, amount, txId });
 
     return {
       success: true,
-      provider: this.provider,
+      provider: dynamicPix ? 'mercadopago' : (this.provider || 'direct_pix'),
       orderId: `ord_${crypto.randomUUID()}`,
       tenantId,
       plan,
@@ -105,9 +193,13 @@ class BillingGatewayAdapter {
       paymentMethods: ['pix', 'credit_card'],
       pix: {
         copyPaste: pixCopyPaste,
-        qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(pixCopyPaste)}`,
-        expiresAt
+        qrCodeUrl,
+        expiresAt,
+        merchantName: this.pixName,
+        pixKey: this.pixKey
       },
+      cardCheckoutUrl,
+      whatsappConfirmationUrl: whatsappUrl,
       checkoutUrl: `/checkout?plan=${plan}&cycle=${billingCycle}&tenant=${tenantId}`,
       createdAt: new Date().toISOString()
     };
@@ -195,7 +287,24 @@ class BillingGatewayAdapter {
       };
     }
 
-    // 4. Standard Nexus Direct Format
+    // 4. Mercado Pago Webhook Format
+    if (payload.action === 'payment.updated' || payload.action === 'payment.created' || payload.type === 'payment' || payload.topic === 'payment') {
+      const paymentData = payload.data || payload;
+      const status = paymentData.status || (payload.action === 'payment.created' ? 'payment.approved' : 'payment.approved');
+      return {
+        id: `mp_${paymentData.id || Date.now()}`,
+        type: status === 'approved' || status === 'payment.approved' ? 'payment.approved' : 'payment.updated',
+        data: {
+          tenant_id: paymentData.external_reference || 'tenant-self-service',
+          plan: 'pro',
+          amount: paymentData.transaction_amount || 0,
+          currency: 'BRL',
+          gateway: 'mercadopago'
+        }
+      };
+    }
+
+    // 5. Standard Nexus Direct Format
     return payload;
   }
 }

@@ -51,12 +51,19 @@ export function regenerateWebhookToken() {
   return cfg.token;
 }
 
+function getBase() {
+  if (typeof window !== 'undefined' && typeof window.getApiBaseUrl === 'function') {
+    return window.getApiBaseUrl();
+  }
+  return '';
+}
+
 /**
  * Fetches pending leads from the local backend server endpoint
  */
 export async function pollWebhookInbox() {
   try {
-    const res = await fetch('/api/webhook/leads');
+    const res = await fetch(getBase() + '/api/webhook/leads');
     if (!res.ok) return { count: 0, leads: [] };
     const data = await res.json();
     if (!data.leads || data.leads.length === 0) return { count: 0, leads: [] };
@@ -134,7 +141,7 @@ export async function pollWebhookInbox() {
 
     // Acknowledge processed leads to backend
     if (acknowledgedIds.length > 0) {
-      fetch('/api/webhook/leads/ack', {
+      fetch(getBase() + '/api/webhook/leads/ack', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leadIds: acknowledgedIds })
@@ -162,7 +169,7 @@ export async function sendTestWebhookLead(token) {
     notes: 'Interessada no plano Enterprise para equipe de 8 atendentes.'
   };
 
-  const response = await fetch('/api/webhook/leads', {
+  const response = await fetch(getBase() + '/api/webhook/leads', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

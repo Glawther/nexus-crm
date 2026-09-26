@@ -786,7 +786,8 @@ function setupWebhookModalEvents() {
   function updateFields() {
     const cfg = getWebhookConfig();
     if (urlInput) {
-      urlInput.value = `${window.location.origin}/api/webhook/leads`;
+      const base = typeof window.getApiBaseUrl === 'function' && window.getApiBaseUrl() ? window.getApiBaseUrl() : window.location.origin;
+      urlInput.value = `${base}/api/webhook/leads`;
     }
     if (tokenInput) {
       tokenInput.value = cfg.token;
@@ -1967,7 +1968,8 @@ function setupAuthPortalEvents() {
 
       // Tentativa de provisionamento no backend comercial (Zero Trust API)
       try {
-        const res = await fetch('/api/v1/commercial/register-tenant', {
+        const baseUrl = typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : '';
+        const res = await fetch(`${baseUrl}/api/v1/commercial/register-tenant`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -3650,6 +3652,16 @@ function setupBillingEvents() {
 // ==========================================================================
 // Commercial Subscription & 1-Click PIX Checkout Engine
 // ==========================================================================
+window.getApiBaseUrl = function() {
+  if (typeof window === 'undefined') return '';
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return '';
+  }
+  const custom = localStorage.getItem('nexus_cloud_backend_url');
+  if (custom) return custom.replace(/\/$/, '');
+  return 'https://nexus-crm-api.onrender.com';
+};
+
 function setupCheckoutModalEvents() {
   const modal = document.getElementById('modal-checkout');
   const btnCloseModal = document.getElementById('btn-close-checkout-modal');
@@ -3658,11 +3670,21 @@ function setupCheckoutModalEvents() {
   const pixInput = document.getElementById('chk-pix-copypaste-input');
   const pixQrImg = document.getElementById('chk-pix-qrcode-img');
   const gatewayCardLink = document.getElementById('chk-gateway-card-link');
+  const whatsappLink = document.getElementById('chk-whatsapp-receipt-link');
   const currentPlanBadge = document.getElementById('chk-current-plan-badge');
   const trialDaysBadge = document.getElementById('chk-trial-days-badge');
   const quotaUsers = document.getElementById('chk-quota-users');
   const quotaLeads = document.getElementById('chk-quota-leads');
   const trialPillText = document.getElementById('trial-pill-text');
+
+  // Admin settings elements
+  const btnToggleAdmin = document.getElementById('btn-toggle-payment-settings');
+  const adminDrawer = document.getElementById('chk-admin-settings-drawer');
+  const cfgPixKey = document.getElementById('cfg-pix-key');
+  const cfgPixName = document.getElementById('cfg-pix-name');
+  const cfgSupportWhatsapp = document.getElementById('cfg-support-whatsapp');
+  const cfgBackendUrl = document.getElementById('cfg-backend-url');
+  const btnSaveSettings = document.getElementById('btn-save-payment-settings');
 
   let activeSelectedPlan = 'pro';
 
@@ -3672,27 +3694,49 @@ function setupCheckoutModalEvents() {
 
     const prices = { starter: 97, pro: 197, enterprise: 497 };
     const amount = prices[plan] || 197;
-    const fallbackPix = `00020126580014br.gov.bcb.pix0136pix@nexuscrm.com.br520400005303986540${amount}.005802BR5916NEXUS CRM SAAS6009SAO PAULO62070503***6304ABCD`;
+    const customPixKey = localStorage.getItem('nexus_custom_pix_key') || 'contato@nexuscrm.com.br';
+    const customPixName = localStorage.getItem('nexus_custom_pix_name') || 'NEXUS CRM ENTERPRISE';
+    const customWhatsapp = localStorage.getItem('nexus_custom_whatsapp') || '5511999999999';
+
+    const fallbackPix = `00020126580014br.gov.bcb.pix0136${customPixKey}520400005303986540${amount}.005802BR5916${customPixName.substring(0, 16).toUpperCase()}6009SAO PAULO62070503***6304ABCD`;
 
     if (pixInput) pixInput.value = fallbackPix;
     if (pixQrImg) pixQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(fallbackPix)}`;
     if (gatewayCardLink) gatewayCardLink.href = `/checkout?plan=${plan}&cycle=monthly`;
+    if (whatsappLink) {
+      const cleanWa = customWhatsapp.replace(/\D/g, '');
+      const waTarget = cleanWa.startsWith('55') ? cleanWa : `55${cleanWa}`;
+      whatsappLink.href = `https://wa.me/${waTarget}?text=${encodeURIComponent(`Olá! Realizei o pagamento PIX do Plano ${plan.toUpperCase()} (R$ ${amount},00) do Nexus CRM. Segue o comprovante em anexo para ativação da conta!`)}`;
+    }
 
     try {
-      const res = await fetch('/api/v1/commercial/checkout', {
+      const baseUrl = window.getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/v1/commercial/checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ plan, billingCycle: 'monthly' })
+        body: JSON.stringify({
+          plan,
+          billingCycle: 'monthly',
+          customer: {
+            pixKey: customPixKey,
+            pixName: customPixName
+          }
+        })
       });
       if (res.ok) {
         const data = await res.json();
         if (data.pix) {
           if (pixInput) pixInput.value = data.pix.copyPaste;
           if (pixQrImg) pixQrImg.src = data.pix.qrCodeUrl;
-          if (gatewayCardLink && data.checkoutUrl) gatewayCardLink.href = data.checkoutUrl;
+        }
+        if (data.cardCheckoutUrl && gatewayCardLink) {
+          gatewayCardLink.href = data.cardCheckoutUrl;
+        }
+        if (data.whatsappConfirmationUrl && whatsappLink) {
+          whatsappLink.href = data.whatsappConfirmationUrl;
         }
       }
     } catch {
@@ -3707,7 +3751,8 @@ function setupCheckoutModalEvents() {
 
     try {
       if (token) {
-        const res = await fetch('/api/v1/commercial/subscription', {
+        const baseUrl = window.getApiBaseUrl();
+        const res = await fetch(`${baseUrl}/api/v1/commercial/subscription`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -3729,6 +3774,53 @@ function setupCheckoutModalEvents() {
     if (trialPillText) {
       trialPillText.textContent = `⚡ Teste: ${daysRemaining} dias restantes`;
     }
+  }
+
+  // Populate admin settings drawer fields
+  if (cfgPixKey) cfgPixKey.value = localStorage.getItem('nexus_custom_pix_key') || '';
+  if (cfgPixName) cfgPixName.value = localStorage.getItem('nexus_custom_pix_name') || '';
+  if (cfgSupportWhatsapp) cfgSupportWhatsapp.value = localStorage.getItem('nexus_custom_whatsapp') || '';
+  if (cfgBackendUrl) cfgBackendUrl.value = localStorage.getItem('nexus_cloud_backend_url') || 'https://nexus-crm-api.onrender.com';
+
+  if (btnToggleAdmin && adminDrawer) {
+    btnToggleAdmin.addEventListener('click', () => {
+      adminDrawer.style.display = adminDrawer.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  if (btnSaveSettings) {
+    btnSaveSettings.addEventListener('click', async () => {
+      const pixKey = cfgPixKey?.value.trim() || '';
+      const pixName = cfgPixName?.value.trim() || '';
+      const supportWhatsapp = cfgSupportWhatsapp?.value.trim() || '';
+      const backendUrl = cfgBackendUrl?.value.trim() || '';
+
+      if (pixKey) localStorage.setItem('nexus_custom_pix_key', pixKey);
+      if (pixName) localStorage.setItem('nexus_custom_pix_name', pixName);
+      if (supportWhatsapp) localStorage.setItem('nexus_custom_whatsapp', supportWhatsapp);
+      if (backendUrl) localStorage.setItem('nexus_cloud_backend_url', backendUrl);
+
+      // Attempt to sync with backend if logged in
+      const token = localStorage.getItem('nexus_jwt_token');
+      if (token) {
+        try {
+          const baseUrl = window.getApiBaseUrl();
+          await fetch(`${baseUrl}/api/v1/commercial/payment-settings`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ pixKey, pixName, supportWhatsapp })
+          });
+        } catch (e) {
+          console.warn('[Billing Config] Local save preserved, backend sync deferred:', e);
+        }
+      }
+
+      showToast('Configurações de recebimento e nuvem salvas com sucesso!', 'success');
+      loadCheckoutData(activeSelectedPlan);
+    });
   }
 
   window.openCheckoutModal = function(plan = 'pro') {

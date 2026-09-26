@@ -2235,10 +2235,52 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
         </div>
 
         <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <span style="font-size: 0.75rem; color: #64748b;">Prefere cartão ou boleto?</span>
+          <a href="#" id="chk-whatsapp-receipt-link" target="_blank" rel="noopener" class="btn btn-sm" style="background: #25d366; color: #fff; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; font-size: 0.78rem;">
+            <span>📱 Já paguei! Enviar Comprovante</span>
+          </a>
           <a href="#" id="chk-gateway-card-link" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size: 0.78rem;">
             💳 Pagar com Cartão de Crédito
           </a>
+        </div>
+      </div>
+
+      <!-- Admin Payment & Cloud Configuration Drawer (Visible for Admins) -->
+      <div id="chk-admin-settings-section" style="margin-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
+        <button type="button" id="btn-toggle-payment-settings" class="btn btn-outline btn-sm" style="width: 100%; justify-content: center; gap: 6px; font-size: 0.75rem; border-color: rgba(255,255,255,0.15);">
+          <span>⚙️ Configurar Meu PIX Real &amp; Backend na Nuvem (Admin)</span>
+        </button>
+
+        <div id="chk-admin-settings-drawer" style="display: none; margin-top: 1rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: #d9f942; margin-bottom: 0.5rem;">Configurações de Recebimento do SaaS</div>
+          <p style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 0.75rem;">Digite sua chave PIX para o dinheiro cair direto na sua conta bancária sem intermediários, ou informe a URL do seu backend na nuvem.</p>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0.75rem;">
+            <div>
+              <label style="font-size: 0.72rem; color: #cbd5e1; display: block; margin-bottom: 2px;">Sua Chave PIX (CPF/CNPJ/Email/EVP):</label>
+              <input type="text" id="cfg-pix-key" class="form-input" placeholder="ex: 12345678900 ou seu@email.com" style="font-size: 0.75rem;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: #cbd5e1; display: block; margin-bottom: 2px;">Nome do Titular / Razão Social:</label>
+              <input type="text" id="cfg-pix-name" class="form-input" placeholder="ex: SEU NOME OU EMPRESA" style="font-size: 0.75rem;">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0.75rem;">
+            <div>
+              <label style="font-size: 0.72rem; color: #cbd5e1; display: block; margin-bottom: 2px;">WhatsApp p/ Comprovantes (com DDD):</label>
+              <input type="text" id="cfg-support-whatsapp" class="form-input" placeholder="ex: 11999998888" style="font-size: 0.75rem;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: #cbd5e1; display: block; margin-bottom: 2px;">URL do Backend na Nuvem (Render/Railway):</label>
+              <input type="text" id="cfg-backend-url" class="form-input" placeholder="https://nexus-crm-api.onrender.com" style="font-size: 0.75rem;">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" id="btn-save-payment-settings" class="btn btn-primary btn-sm" style="font-size: 0.75rem;">
+              💾 Salvar Configurações
+            </button>
+          </div>
         </div>
       </div>
     </div>

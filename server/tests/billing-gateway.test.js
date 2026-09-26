@@ -124,4 +124,49 @@ test('💳 [BILLING GATEWAY] Unified Multi-Gateway & Subscription Quotas', async
     assert.equal(sub.quotas.leads.limit, 25000);
     assert.equal(sub.quotas.leads.used, 1); // 1 welcome lead
   });
+
+  await t.test('7. Deve normalizar webhooks do Mercado Pago para o padrão do CRM', () => {
+    const mpPayload = {
+      action: 'payment.created',
+      type: 'payment',
+      data: {
+        id: '1234567890',
+        external_reference: 'tenant-mp-01',
+        transaction_amount: 197.00,
+        status: 'approved'
+      }
+    };
+
+    const normalized = gateway.normalizeWebhookPayload(mpPayload);
+    assert.equal(normalized.type, 'payment.approved');
+    assert.equal(normalized.data.tenant_id, 'tenant-mp-01');
+    assert.equal(normalized.data.amount, 197.00);
+    assert.equal(normalized.data.gateway, 'mercadopago');
+  });
+
+  await t.test('8. Deve gerar link de confirmação do WhatsApp com dados do PIX e tenant', () => {
+    const waUrl = gateway.generateWhatsAppConfirmationUrl({
+      tenantId: 'tenant-wa-99',
+      plan: 'starter',
+      amount: 97.00,
+      txId: 'NX-TX-5544'
+    });
+
+    assert.ok(waUrl.startsWith('https://wa.me/'), 'Deve ser uma URL oficial do WhatsApp');
+    assert.match(waUrl, /STARTER/, 'Mensagem deve conter o plano em destaque');
+    assert.match(waUrl, /97/, 'Mensagem deve conter o valor');
+    assert.match(waUrl, /NX-TX-5544/, 'Mensagem deve conter o ID da transação');
+  });
+
+  await t.test('9. Deve atualizar configurações comerciais de recebimento com sucesso', () => {
+    const updated = commercialService.updatePaymentSettings({
+      pixKey: 'minha-chave-real@empresa.com.br',
+      pixName: 'MINHA EMPRESA SAAS',
+      supportWhatsapp: '5511988887777'
+    });
+
+    assert.equal(updated.pixKey, 'minha-chave-real@empresa.com.br');
+    assert.equal(updated.pixName, 'MINHA EMPRESA SAAS');
+    assert.equal(updated.supportWhatsapp, '5511988887777');
+  });
 });

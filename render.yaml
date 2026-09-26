@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: nexus-crm-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: BILLING_PROVIDER
+        value: direct_pix
+      - key: PIX_KEY
+        value: contato@nexuscrm.com.br
+      - key: PIX_MERCHANT_NAME
+        value: NEXUS CRM ENTERPRISE
+      - key: PIX_CITY
+        value: SAO PAULO
+      - key: SUPPORT_WHATSAPP
+        value: "5511999999999"
+      - key: CHECKOUT_STARTER_URL
+        value: "https://pay.kiwify.com.br/starter-demo"
+      - key: CHECKOUT_PRO_URL
+        value: "https://pay.kiwify.com.br/pro-demo"
+      - key: CHECKOUT_ENTERPRISE_URL
+        value: "https://pay.kiwify.com.br/enterprise-demo"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MASTER_ENCRYPTION_KEY
+        generateValue: true
+      - key: WEBHOOK_HMAC_SECRET
+        generateValue: true
