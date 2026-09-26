@@ -3637,3 +3637,135 @@ function setupNotificationCenter() {
   // Initial state
   updateBadge();
 }
+
+// ==========================================================================
+// Billing & Commercial Subscription Management
+// ==========================================================================
+function setupBillingEvents() {
+  window.openSubscriptionModal = function() {
+    if (window.openCheckoutModal) window.openCheckoutModal();
+  };
+}
+
+// ==========================================================================
+// Commercial Subscription & 1-Click PIX Checkout Engine
+// ==========================================================================
+function setupCheckoutModalEvents() {
+  const modal = document.getElementById('modal-checkout');
+  const btnCloseModal = document.getElementById('btn-close-checkout-modal');
+  const btnCloseFooter = document.getElementById('btn-close-checkout-footer');
+  const btnCopyPix = document.getElementById('btn-copy-pix-code');
+  const pixInput = document.getElementById('chk-pix-copypaste-input');
+  const pixQrImg = document.getElementById('chk-pix-qrcode-img');
+  const gatewayCardLink = document.getElementById('chk-gateway-card-link');
+  const currentPlanBadge = document.getElementById('chk-current-plan-badge');
+  const trialDaysBadge = document.getElementById('chk-trial-days-badge');
+  const quotaUsers = document.getElementById('chk-quota-users');
+  const quotaLeads = document.getElementById('chk-quota-leads');
+  const trialPillText = document.getElementById('trial-pill-text');
+
+  let activeSelectedPlan = 'pro';
+
+  async function loadCheckoutData(plan = 'pro') {
+    activeSelectedPlan = plan;
+    const token = localStorage.getItem('nexus_jwt_token');
+
+    const prices = { starter: 97, pro: 197, enterprise: 497 };
+    const amount = prices[plan] || 197;
+    const fallbackPix = `00020126580014br.gov.bcb.pix0136pix@nexuscrm.com.br520400005303986540${amount}.005802BR5916NEXUS CRM SAAS6009SAO PAULO62070503***6304ABCD`;
+
+    if (pixInput) pixInput.value = fallbackPix;
+    if (pixQrImg) pixQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(fallbackPix)}`;
+    if (gatewayCardLink) gatewayCardLink.href = `/checkout?plan=${plan}&cycle=monthly`;
+
+    try {
+      const res = await fetch('/api/v1/commercial/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ plan, billingCycle: 'monthly' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.pix) {
+          if (pixInput) pixInput.value = data.pix.copyPaste;
+          if (pixQrImg) pixQrImg.src = data.pix.qrCodeUrl;
+          if (gatewayCardLink && data.checkoutUrl) gatewayCardLink.href = data.checkoutUrl;
+        }
+      }
+    } catch {
+      // Local fallback mode
+    }
+  }
+
+  async function refreshSubscriptionInfo() {
+    const token = localStorage.getItem('nexus_jwt_token');
+    let planName = 'PROFESSIONAL';
+    let daysRemaining = 7;
+
+    try {
+      if (token) {
+        const res = await fetch('/api/v1/commercial/subscription', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data) {
+            planName = (data.data.planName || data.data.plan || 'PROFESSIONAL').toUpperCase();
+            daysRemaining = data.data.trialDaysRemaining ?? 7;
+            if (currentPlanBadge) currentPlanBadge.textContent = planName;
+            if (trialDaysBadge) trialDaysBadge.textContent = `⏳ ${daysRemaining} dias de teste`;
+            if (quotaUsers && data.data.quotas) quotaUsers.textContent = `${data.data.quotas.users.used} / ${data.data.quotas.users.limit}`;
+            if (quotaLeads && data.data.quotas) quotaLeads.textContent = `${data.data.quotas.leads.used} / ${data.data.quotas.leads.limit.toLocaleString()}`;
+          }
+        }
+      }
+    } catch {
+      // Local fallback
+    }
+
+    if (trialPillText) {
+      trialPillText.textContent = `⚡ Teste: ${daysRemaining} dias restantes`;
+    }
+  }
+
+  window.openCheckoutModal = function(plan = 'pro') {
+    if (modal) {
+      modal.showModal();
+      window.selectCheckoutPlan(plan);
+      refreshSubscriptionInfo();
+    }
+  };
+
+  window.selectCheckoutPlan = function(plan) {
+    document.querySelectorAll('.checkout-plan-card').forEach(card => {
+      const isSelected = card.dataset.plan === plan;
+      card.classList.toggle('active', isSelected);
+      card.style.border = isSelected ? '2px solid #d9f942' : '1px solid rgba(255,255,255,0.1)';
+      card.style.background = isSelected ? 'rgba(217, 249, 66, 0.05)' : 'rgba(255,255,255,0.02)';
+    });
+    loadCheckoutData(plan);
+  };
+
+  if (btnCloseModal) btnCloseModal.addEventListener('click', () => modal?.close());
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', () => modal?.close());
+
+  if (btnCopyPix && pixInput) {
+    btnCopyPix.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pixInput.value);
+        showToast('Código PIX Copia e Cola copiado com sucesso! Abra seu banco para pagar.', 'success');
+        btnCopyPix.textContent = '✅ Copiado!';
+        setTimeout(() => { btnCopyPix.textContent = 'Copiar PIX'; }, 3000);
+      } catch {
+        pixInput.select();
+        document.execCommand('copy');
+        showToast('Código PIX copiado!', 'success');
+      }
+    });
+  }
+
+  refreshSubscriptionInfo();
+}

@@ -140,6 +140,25 @@ async function handleApiV1(req, res, parsedUrl) {
     }
   }
 
+  // POST /api/v1/commercial/checkout (Generates 1-Click PIX & Order)
+  if (parsedUrl === '/api/v1/commercial/checkout' && method === 'POST') {
+    try {
+      const { body } = await parseJsonBody(req);
+      const tenantId = body.tenant_id || body.tenantId || 'tenant-self-service';
+      const plan = body.plan || 'pro';
+      const billingCycle = body.billing_cycle || body.billingCycle || 'monthly';
+      const result = await commercialService.createCheckout({
+        tenantId,
+        plan,
+        billingCycle,
+        customer: body.customer || {}
+      });
+      return sendJson(res, 200, result);
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
   // 3. AUTHENTICATED ZERO TRUST ROUTES (Require valid Bearer token & active Tenant)
   const authResult = await authenticateContext(req, res, defaultRepository);
   if (!authResult.success) {
@@ -147,6 +166,15 @@ async function handleApiV1(req, res, parsedUrl) {
   }
 
   const context = authResult.context;
+
+  // ROUTE: GET /api/v1/commercial/subscription (Quotas, Plan, Trial Status)
+  if (parsedUrl === '/api/v1/commercial/subscription' && method === 'GET') {
+    const sub = await commercialService.getSubscription(context.tenantId);
+    if (!sub) {
+      return sendJson(res, 404, { error: 'Assinatura não localizada para o locatário.' });
+    }
+    return sendJson(res, 200, { success: true, data: sub });
+  }
 
   // ROUTE: GET /api/v1/leads
   if (parsedUrl === '/api/v1/leads' && method === 'GET') {

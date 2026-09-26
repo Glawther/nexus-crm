@@ -9,16 +9,19 @@ const { defaultRepository, SecurityContext } = require('../database/repository')
 const { hashPassword, verifyWebhookSignature } = require('../security/crypto-service');
 const { auditService, AUDIT_ACTIONS, SEVERITY } = require('../security/audit-service');
 const { generateSessionToken } = require('../middleware/auth-context');
+const { defaultBillingAdapter } = require('./billing-gateway-adapter');
 
-// Plan specifications & quotas
+// Plan specifications & quotas with 7-day trial and checkout URLs
 const COMMERCIAL_PLANS = {
   starter: {
     id: 'starter',
     name: 'Nexus Starter',
     priceMonthly: 97.00,
     priceAnnual: 77.00,
+    trialDays: 7,
     maxUsers: 3,
     maxLeads: 5000,
+    checkoutUrl: process.env.CHECKOUT_STARTER_URL || '/checkout?plan=starter',
     features: ['Kanban Drag & Drop', 'WhatsApp 1-Clique', 'Backup CSV', 'Até 3 usuários']
   },
   pro: {
@@ -26,8 +29,10 @@ const COMMERCIAL_PLANS = {
     name: 'Nexus Professional',
     priceMonthly: 197.00,
     priceAnnual: 157.00,
+    trialDays: 7,
     maxUsers: 15,
     maxLeads: 25000,
+    checkoutUrl: process.env.CHECKOUT_PRO_URL || '/checkout?plan=pro',
     features: ['IA Gemini Flash Ilimitada', 'Webhooks Meta Ads', 'Customização Whitelabel', 'Até 15 usuários']
   },
   enterprise: {
@@ -35,15 +40,18 @@ const COMMERCIAL_PLANS = {
     name: 'Nexus Enterprise',
     priceMonthly: 497.00,
     priceAnnual: 397.00,
+    trialDays: 7,
     maxUsers: 999,
     maxLeads: 999999,
+    checkoutUrl: process.env.CHECKOUT_ENTERPRISE_URL || '/checkout?plan=enterprise',
     features: ['Isolamento RLS Dedicado', 'Trilha Auditoria ISO 27001', 'Usuários Ilimitados', 'SLA 99.9%', 'Suporte VIP']
   }
 };
 
 class CommercialService {
-  constructor(repository = defaultRepository) {
+  constructor(repository = defaultRepository, billingAdapter = defaultBillingAdapter) {
     this.repository = repository;
+    this.billingAdapter = billingAdapter;
     this.processedWebhookEvents = new Set(); // In-memory idempotency cache
   }
 
@@ -92,14 +100,19 @@ class CommercialService {
       }
     }
 
-    // 2. Provision Tenant with Plan Quotas
+    // 2. Provision Tenant with Plan Quotas & 7-Day Trial
     const tenantId = crypto.randomUUID();
+    const trialDays = selectedPlan.trialDays || 7;
+    const trialEndsAt = new Date(Date.now() + (trialDays * 24 * 60 * 60 * 1000)).toISOString();
+
     const tenant = {
       id: tenantId,
       name: companyName.trim(),
       slug: cleanSlug,
       plan: selectedPlan.id,
       status: 'active',
+      subscription_status: 'trialing',
+      trial_ends_at: trialEndsAt,
       max_users: selectedPlan.maxUsers,
       max_leads: selectedPlan.maxLeads,
       created_at: new Date().toISOString(),
@@ -315,6 +328,49 @@ class CommercialService {
 
   listPlans() {
     return COMMERCIAL_PLANS;
+  }
+
+  /**
+   * Retrieves subscription status, quotas usage and trial information
+   */
+  async getSubscription(tenantId) {
+    const tenant = await this.repository.getTenantById(tenantId);
+    if (!tenant) return null;
+
+    const plan = COMMERCIAL_PLANS[tenant.plan] || COMMERCIAL_PLANS.pro;
+    const usersCount = Array.from(this.repository.users.values()).filter(u => u.tenant_id === tenantId).length;
+    const leadsCount = Array.from(this.repository.leads.values()).filter(l => l.tenant_id === tenantId).length;
+
+    const trialEnds = tenant.trial_ends_at ? new Date(tenant.trial_ends_at) : null;
+    const now = new Date();
+    const daysLeft = trialEnds ? Math.max(0, Math.ceil((trialEnds - now) / (1000 * 60 * 60 * 24))) : 0;
+
+    return {
+      tenantId: tenant.id,
+      companyName: tenant.name,
+      plan: plan.id,
+      planName: plan.name,
+      status: tenant.status,
+      subscriptionStatus: tenant.subscription_status || 'active',
+      isTrial: tenant.subscription_status === 'trialing' && daysLeft > 0,
+      trialDaysRemaining: daysLeft,
+      trialEndsAt: tenant.trial_ends_at,
+      priceMonthly: plan.priceMonthly,
+      priceAnnual: plan.priceAnnual,
+      checkoutUrl: plan.checkoutUrl,
+      quotas: {
+        users: { used: usersCount, limit: tenant.max_users || plan.maxUsers },
+        leads: { used: leadsCount, limit: tenant.max_leads || plan.maxLeads }
+      },
+      features: plan.features
+    };
+  }
+
+  /**
+   * Creates an online checkout session with PIX QR Code & Link
+   */
+  async createCheckout(params) {
+    return this.billingAdapter.createCheckoutSession(params);
   }
 }
 

@@ -243,6 +243,14 @@
           <div class="dropdown-menu sidebar-dropdown-menu" id="header-tools-menu" style="display: none;">
             <!-- Inteligência Artificial & Nuvem (Dentro do Menu de Ferramentas) -->
             <div class="tools-group-title">Inteligência &amp; Nuvem</div>
+            <button type="button" class="dropdown-item" id="sidebar-subscription-btn" onclick="window.openCheckoutModal()">
+              <span class="dropdown-item-icon">💳</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Assinatura &amp; Planos</span>
+                <span class="dropdown-item-desc">Limites, PIX e cotas do plano</span>
+              </div>
+            </button>
+
             <button type="button" class="dropdown-item" id="sidebar-gemini-btn">
               <span class="dropdown-item-icon">✨</span>
               <div class="dropdown-item-text">
@@ -391,6 +399,12 @@
               </div>
             </div>
           </div>
+
+          <!-- Indicador de Assinatura / Teste Grátis de 7 Dias -->
+          <button type="button" class="connection-pill" id="trial-header-pill" onclick="window.openCheckoutModal()" title="Gerenciar assinatura e limites do CRM" style="background: rgba(217, 249, 66, 0.12); color: #d9f942; border: 1px solid rgba(217, 249, 66, 0.3); font-weight: 700; cursor: pointer;">
+            <span class="pulse-dot" style="background: #d9f942;"></span>
+            <span id="trial-pill-text">⚡ Teste: 7 dias</span>
+          </button>
 
           <!-- Status de Conexão com Google Cloud -->
           <button type="button" class="connection-pill local" id="connection-status-pill" title="Configurar conexão com o Google Cloud Firestore">
@@ -2133,6 +2147,104 @@ Carla Menezes, LogiTech Brasil, +55 21 97777-2222, 90000, carla@logitech.com.br"
           ⚡ Simular Envio de Lead via Webhook
         </button>
       </div>
+    </div>
+  </dialog>
+
+  <!-- ======================================================================
+       Modal: Gestão de Assinatura, Planos & Pagamento PIX 1-Clique
+       ====================================================================== -->
+  <dialog id="modal-checkout" class="crm-modal" style="max-width: 650px; width: 95%; padding: 0; border: 1px solid var(--border-color); background: #0f1420; color: #f8fafc; border-radius: 20px; box-shadow: 0 25px 70px rgba(0,0,0,0.8);">
+    <div style="padding: 1.5rem 1.75rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">💳</span>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Assinatura &amp; Planos Comerciais</h2>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin: 0;">Gerencie seu plano, cotas de usuários e faturamento</p>
+        </div>
+      </div>
+      <button type="button" class="modal-close-btn" id="btn-close-checkout-modal" style="background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <div style="padding: 1.5rem 1.75rem; max-height: 80vh; overflow-y: auto;">
+      <!-- Active Subscription Status Banner -->
+      <div style="background: rgba(217, 249, 66, 0.08); border: 1px solid rgba(217, 249, 66, 0.25); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; background: #d9f942; color: #000; padding: 2px 8px; border-radius: 4px;" id="chk-current-plan-badge">PROFESSIONAL</span>
+            <span style="font-size: 0.85rem; font-weight: 600; color: #fff;" id="chk-current-status-title">Período de Testes Ativo</span>
+          </div>
+          <span style="font-size: 0.8rem; font-weight: 700; color: #d9f942;" id="chk-trial-days-badge">⏳ 7 dias restantes</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.78rem; color: #cbd5e1; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.06);">
+          <div>👥 Usuários: <strong id="chk-quota-users">1 / 15</strong></div>
+          <div>🎯 Leads no Funil: <strong id="chk-quota-leads">1 / 25.000</strong></div>
+        </div>
+      </div>
+
+      <!-- Plan Selection Grid -->
+      <div style="font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem;">Escolha seu Plano para Efetivar a Assinatura:</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 1.25rem;">
+        <!-- Starter Card -->
+        <div class="checkout-plan-card" data-plan="starter" onclick="window.selectCheckoutPlan('starter')" style="cursor: pointer; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; background: rgba(255,255,255,0.02); transition: all 0.2s;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">Starter</div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: #d9f942; margin: 4px 0;">R$ 97<span style="font-size: 0.7rem; font-weight: 500; color: #94a3b8;">/mês</span></div>
+          <div style="font-size: 0.72rem; color: #94a3b8;">Até 3 usuários e 5.000 leads</div>
+        </div>
+
+        <!-- Pro Card (Selected by default) -->
+        <div class="checkout-plan-card active" data-plan="pro" onclick="window.selectCheckoutPlan('pro')" style="cursor: pointer; border: 2px solid #d9f942; border-radius: 12px; padding: 1rem; background: rgba(217, 249, 66, 0.05); transition: all 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">Professional</span>
+            <span style="font-size: 0.65rem; background: #d9f942; color: #000; font-weight: 800; padding: 1px 5px; border-radius: 3px;">TOP</span>
+          </div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: #d9f942; margin: 4px 0;">R$ 197<span style="font-size: 0.7rem; font-weight: 500; color: #94a3b8;">/mês</span></div>
+          <div style="font-size: 0.72rem; color: #94a3b8;">Até 15 usuários + IA Gemini</div>
+        </div>
+
+        <!-- Enterprise Card -->
+        <div class="checkout-plan-card" data-plan="enterprise" onclick="window.selectCheckoutPlan('enterprise')" style="cursor: pointer; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; background: rgba(255,255,255,0.02); transition: all 0.2s;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">Enterprise</div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: #d9f942; margin: 4px 0;">R$ 497<span style="font-size: 0.7rem; font-weight: 500; color: #94a3b8;">/mês</span></div>
+          <div style="font-size: 0.72rem; color: #94a3b8;">Usuários ilimitados + Whitelabel</div>
+        </div>
+      </div>
+
+      <!-- Payment Section: PIX 1-Click + Gateway Link -->
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+            <span>⚡ Pagamento Instantâneo via PIX</span>
+          </div>
+          <span style="font-size: 0.72rem; color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 2px 8px; border-radius: 12px;">Liberação Automática</span>
+        </div>
+
+        <div style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;">
+          <div style="background: #fff; padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; width: 140px; height: 140px;">
+            <img id="chk-pix-qrcode-img" src="" alt="QR Code PIX" style="width: 100%; height: 100%; object-fit: contain;">
+          </div>
+          <div style="flex: 1; min-width: 220px;">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">Código PIX Copia e Cola:</div>
+            <div style="display: flex; gap: 6px; margin-bottom: 0.75rem;">
+              <input type="text" id="chk-pix-copypaste-input" readonly class="form-input" style="font-size: 0.75rem; font-family: monospace;" value="...">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-copy-pix-code" style="white-space: nowrap;">Copiar PIX</button>
+            </div>
+            <div style="font-size: 0.72rem; color: #94a3b8; line-height: 1.4;">
+              Abra seu aplicativo do banco, escolha <strong>PIX Copia e Cola</strong> e efetue o pagamento. O acesso é liberado instantaneamente.
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <span style="font-size: 0.75rem; color: #64748b;">Prefere cartão ou boleto?</span>
+          <a href="#" id="chk-gateway-card-link" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size: 0.78rem;">
+            💳 Pagar com Cartão de Crédito
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding: 1rem 1.75rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: flex-end; background: rgba(255,255,255,0.02);">
+      <button type="button" class="btn btn-secondary" id="btn-close-checkout-footer">Fechar</button>
     </div>
   </dialog>
 
