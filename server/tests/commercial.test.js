@@ -50,10 +50,10 @@ test('💼 [COMMERCIAL SAAS] Plans, Self-Service Onboarding & Automated Billing 
       /E-mail corporativo inválido/
     );
 
-    // Senha muito curta (< 8 caracteres)
+    // Senha muito curta (< 6 caracteres)
     await assert.rejects(
       () => commercialService.registerTenant({ companyName: 'Corp', adminName: 'Admin', email: 'adm@corp.com', password: '123' }),
-      /mínimo 8 caracteres/
+      /mínimo 6 caracteres/
     );
   });
 

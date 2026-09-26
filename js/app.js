@@ -133,6 +133,23 @@ import {
   sendTestWebhookLead
 } from './services/webhook-service.js';
 
+// ==========================================================================
+// Dynamic Cloud Backend API Base URL Resolver
+// ==========================================================================
+window.getApiBaseUrl = function() {
+  if (typeof window === 'undefined') return '';
+  const custom = localStorage.getItem('nexus_cloud_backend_url');
+  if (custom) return custom.replace(/\/$/, '');
+
+  const host = window.location.hostname;
+  // If hosted locally or directly on Render (frontend served by same Node process)
+  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('onrender.com')) {
+    return '';
+  }
+  // If hosted on Firebase Hosting (*.web.app or *.firebaseapp.com) or static CDN
+  return 'https://nexus-crm-yfof.onrender.com';
+};
+
 let draggedCustomerId = null;
 let activeWhatsAppCustomerId = null;
 let activeLeadDetailsCustomerId = null;
@@ -1955,6 +1972,9 @@ function setupAuthPortalEvents() {
   if (formRegister) {
     formRegister.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = document.getElementById('btn-submit-register') || formRegister.querySelector('button[type="submit"]');
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Criar Conta e Acessar CRM';
+
       const name = document.getElementById('reg-input-name').value.trim();
       const email = document.getElementById('reg-input-email').value.trim();
       const company = document.getElementById('reg-input-company').value.trim();
@@ -1967,9 +1987,33 @@ function setupAuthPortalEvents() {
         return;
       }
 
-      // Tentativa de provisionamento no backend comercial (Zero Trust API)
+      if (password.length < 6) {
+        showToast("A senha deve ter no mínimo 6 caracteres.", "warning");
+        return;
+      }
+
+      // Feedback visual imediato no botão
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:8px;">
+            <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+            </svg>
+            Criando sua conta...
+          </span>
+        `;
+      }
+
+      let backendSuccess = false;
+      let backendError = null;
+
+      // Tentativa de provisionamento no backend comercial (Zero Trust API) com Timeout resiliente (5s)
       try {
         const baseUrl = typeof window.getApiBaseUrl === 'function' ? window.getApiBaseUrl() : '';
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         const res = await fetch(`${baseUrl}/api/v1/commercial/register-tenant`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1979,24 +2023,70 @@ function setupAuthPortalEvents() {
             email,
             password,
             plan
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
+        const payload = await res.json().catch(() => ({}));
         if (res.ok) {
-          const payload = await res.json();
+          backendSuccess = true;
           if (payload.token) {
             localStorage.setItem('nexus_jwt_token', payload.token);
           }
+          if (payload.tenantId) {
+            localStorage.setItem('nexus_tenant_id', payload.tenantId);
+          }
+        } else {
+          backendError = payload.error || payload.message || 'Falha no cadastro com o servidor.';
         }
-      } catch {
-        // Modo PWA Offline / Static Fallback
+      } catch (err) {
+        console.warn('Backend indisponível ou timeout, inicializando em modo local offline:', err);
       }
 
+      // Se o backend retornou um erro explícito de validação (ex: e-mail já existe)
+      if (backendError && !backendSuccess) {
+        showToast(`Atenção: ${backendError}`, "error");
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHtml;
+        }
+        return;
+      }
+
+      // Registra sessão local e organização
       registerUser(name, email, password, role, company);
       crmStore.addAuditLog('Novo Usuário Cadastrado', `Usuário "${name}" (${email}) registrado no plano ${plan.toUpperCase()}.`);
       logAudit(AUDIT_ACTIONS.USER_REGISTERED, { name, email, role, company, plan });
+      
+      // Oculta portal de autenticação e transiciona UI
       window.hideAuthPortal();
-      showToast(`Conta criada com sucesso! Bem-vindo(a) ao Nexus CRM (${plan.toUpperCase()}), ${name}!`, "success");
+
+      // Limpa hash da URL para evitar recarregar na tela de cadastro
+      if (window.location.hash && (window.location.hash.includes('register') || window.location.hash.includes('checkout'))) {
+        try {
+          history.replaceState(null, '', window.location.pathname);
+        } catch {
+          window.location.hash = '#pipeline';
+        }
+      }
+
+      // Ativa visualização do Funil de Vendas (Pipeline)
+      if (typeof window.navigateToView === 'function') {
+        window.navigateToView('pipeline');
+      }
+
+      // Força atualização da store reativa
+      if (typeof crmStore.emitChange === 'function') {
+        crmStore.emitChange();
+      }
+
+      showToast(`Conta criada com sucesso! Bem-vindo(a) ao Nexus CRM, ${name}!`, "success");
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHtml;
+      }
     });
   }
 
@@ -3647,16 +3737,6 @@ function setupNotificationCenter() {
 // ==========================================================================
 // Commercial Subscription & 1-Click PIX Checkout Engine
 // ==========================================================================
-window.getApiBaseUrl = function() {
-  if (typeof window === 'undefined') return '';
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return '';
-  }
-  const custom = localStorage.getItem('nexus_cloud_backend_url');
-  if (custom) return custom.replace(/\/$/, '');
-  return 'https://nexus-crm-api.onrender.com';
-};
-
 function setupCheckoutModalEvents() {
   const modal = document.getElementById('modal-checkout');
   const btnCloseModal = document.getElementById('btn-close-checkout-modal');
@@ -3775,7 +3855,7 @@ function setupCheckoutModalEvents() {
   if (cfgPixKey) cfgPixKey.value = localStorage.getItem('nexus_custom_pix_key') || '';
   if (cfgPixName) cfgPixName.value = localStorage.getItem('nexus_custom_pix_name') || '';
   if (cfgSupportWhatsapp) cfgSupportWhatsapp.value = localStorage.getItem('nexus_custom_whatsapp') || '';
-  if (cfgBackendUrl) cfgBackendUrl.value = localStorage.getItem('nexus_cloud_backend_url') || 'https://nexus-crm-api.onrender.com';
+  if (cfgBackendUrl) cfgBackendUrl.value = localStorage.getItem('nexus_cloud_backend_url') || 'https://nexus-crm-yfof.onrender.com';
 
   if (btnToggleAdmin && adminDrawer) {
     btnToggleAdmin.addEventListener('click', () => {

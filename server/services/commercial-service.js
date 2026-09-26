@@ -78,8 +78,8 @@ class CommercialService {
     if (!email || !email.includes('@') || !email.includes('.')) {
       throw new Error('E-mail corporativo inválido.');
     }
-    if (!password || password.length < 8) {
-      throw new Error('A senha deve possuir no mínimo 8 caracteres para conformidade de segurança.');
+    if (!password || password.length < 6) {
+      throw new Error('A senha deve possuir no mínimo 6 caracteres.');
     }
 
     const selectedPlan = COMMERCIAL_PLANS[plan] || COMMERCIAL_PLANS.pro;

@@ -20,8 +20,8 @@ if (MASTER_KEY.length !== 32) {
  * Parameters: N=32768 (Cost), r=8 (Block size), p=1 (Parallelism), keylen=64
  */
 async function hashPassword(plainPassword) {
-  if (!plainPassword || typeof plainPassword !== 'string' || plainPassword.length < 8) {
-    throw new Error('A senha deve possuir no mínimo 8 caracteres.');
+  if (!plainPassword || typeof plainPassword !== 'string' || plainPassword.length < 6) {
+    throw new Error('A senha deve possuir no mínimo 6 caracteres.');
   }
 
   const salt = crypto.randomBytes(32);
