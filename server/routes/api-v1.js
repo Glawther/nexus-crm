@@ -10,6 +10,7 @@ const { SecureWebhookController } = require('../controllers/secure-webhook-contr
 const { authenticateContext, generateSessionToken, extractClientIp } = require('../middleware/auth-context');
 const { parseJsonBody } = require('../middleware/body-parser');
 const { auditService, AUDIT_ACTIONS, SEVERITY } = require('../security/audit-service');
+const { commercialService } = require('../services/commercial-service');
 
 const leadController = new LeadController(defaultRepository);
 const exportController = new ExportController(defaultRepository);
@@ -100,6 +101,40 @@ async function handleApiV1(req, res, parsedUrl) {
 
       const result = await webhookController.handleIngest(rawBuffer, signature, tenantId, clientIp);
       return sendJson(res, result.status, result.body);
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  // 3. COMMERCIAL ROUTES (PUBLIC SAAS MONETIZATION & ONBOARDING)
+  // GET /api/v1/commercial/plans
+  if (parsedUrl === '/api/v1/commercial/plans' && method === 'GET') {
+    return sendJson(res, 200, {
+      success: true,
+      plans: commercialService.getPlans()
+    });
+  }
+
+  // POST /api/v1/commercial/register-tenant (Self-Service Onboarding)
+  if (parsedUrl === '/api/v1/commercial/register-tenant' && method === 'POST') {
+    try {
+      const { body } = await parseJsonBody(req);
+      const result = await commercialService.registerTenant(body, clientIp);
+      return sendJson(res, 201, result);
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  // POST /api/v1/commercial/billing-webhook (Automated Recurring Subscriptions)
+  if (parsedUrl === '/api/v1/commercial/billing-webhook' && method === 'POST') {
+    try {
+      const { rawBuffer } = await parseJsonBody(req);
+      const signature = req.headers['x-signature-256'] || req.headers['x-hub-signature-256'] || '';
+      const signingSecret = process.env.BILLING_WEBHOOK_SECRET || 'billing_secret_nexus_2026';
+
+      const result = await commercialService.processBillingWebhook(rawBuffer, signature, signingSecret, clientIp);
+      return sendJson(res, result.status, result);
     } catch (err) {
       return sendJson(res, 400, { error: err.message });
     }

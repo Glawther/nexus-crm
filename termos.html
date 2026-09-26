@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Termos de Uso | Nexus CRM Enterprise</title>
+  <meta name="description" content="Termos e condições gerais de contratação e uso do software como serviço (SaaS) Nexus CRM Enterprise.">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090e;
+      --card: #0f1420;
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #d9f942;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 5%; }
+    .container { max-width: 900px; margin: 0 auto; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 50px 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    h1, h2, h3 { font-family: 'Outfit', sans-serif; color: #fff; margin-bottom: 1rem; }
+    h1 { font-size: 2.4rem; color: var(--primary); }
+    h2 { font-size: 1.4rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    p, li { color: var(--muted); font-size: 0.98rem; margin-bottom: 1rem; }
+    ul { padding-left: 20px; margin-bottom: 1.5rem; }
+    .badge { display: inline-block; background: rgba(217, 249, 66, 0.15); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem; }
+    .back-btn { display: inline-flex; align-items: center; gap: 8px; color: var(--primary); text-decoration: none; font-weight: 600; margin-bottom: 2rem; font-size: 0.95rem; }
+    .back-btn:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/landing" class="back-btn">&larr; Voltar para a Página Principal</a>
+    <span class="badge">CONTRATO DE LICENCIAMENTO SAAS</span>
+    <h1>Termos de Uso do Nexus CRM</h1>
+    <p><strong>Última atualização:</strong> 26 de Setembro de 2026</p>
+
+    <h2>1. Objeto e Aceitação</h2>
+    <p>Estes Termos de Uso regulam o fornecimento do software de gestão de relacionamento com o cliente (Nexus CRM Enterprise) disponibilizado na modalidade Software as a Service (SaaS). Ao criar uma conta ou contratar qualquer plano, o Contratante declara que leu, compreendeu e concorda com todas as disposições aqui estipuladas.</p>
+
+    <h2>2. Isolamento de Dados e Multitenancy</h2>
+    <p>O Nexus CRM opera sob arquitetura de Isolamento Lógico Multitenant com Row-Level Security (RLS) e segregação estrita por Tenant ID. Cada Contratante possui soberania total sobre sua base de leads, contatos e métricas comerciais, sendo terminantemente vedado o acesso cruzado de dados entre diferentes organizações.</p>
+
+    <h2>3. Nível de Serviço (SLA de 99.9%)</h2>
+    <p>Garantimos um índice de disponibilidade mensal de 99.9% (noventa e nove vírgula nove por cento) para as rotas centrais de CRM e sincronização de dados. A arquitetura PWA Offline-First assegura que, em caso de instabilidades de conectividade local, o Contratante possa continuar operando tarefas e visualizando registros armazenados no dispositivo.</p>
+
+    <h2>4. Obrigações e Uso Aceitável</h2>
+    <p>O Contratante compromete-se a:</p>
+    <ul>
+      <li>Não utilizar os recursos de automação de WhatsApp ou Webhooks para disseminação de SPAM, conteúdo ilegal ou mensagens não consentidas;</li>
+      <li>Manter sob sigilo as credenciais de acesso de seus administradores e consultores comerciais;</li>
+      <li>Respeitar os limites de cotas e usuários definidos no plano contratado (Starter, Professional ou Enterprise).</li>
+    </ul>
+
+    <h2>5. Planos, Cobrança e Cancelamento</h2>
+    <p>As assinaturas são renovadas automaticamente conforme a periodicidade escolhida (mensal ou anual). O cancelamento pode ser efetuado a qualquer momento através do painel de governança, mantendo-se o acesso ativo até o encerramento do ciclo de cobrança já pago. O Contratante poderá exportar sua base de dados completa em conformidade com as regras de Data Loss Prevention (DLP).</p>
+
+    <h2>6. Foro e Legislação Aplicável</h2>
+    <p>Estes termos são regidos pelas leis da República Federativa do Brasil, em especial o Marco Civil da Internet (Lei nº 12.965/2014) e a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).</p>
+  </div>
+</body>
+</html>

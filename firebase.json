@@ -79,6 +79,14 @@
         "destination": "/landing.html"
       },
       {
+        "source": "/termos",
+        "destination": "/termos.html"
+      },
+      {
+        "source": "/privacidade",
+        "destination": "/privacidade.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

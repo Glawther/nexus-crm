@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Privacidade & LGPD | Nexus CRM Enterprise</title>
+  <meta name="description" content="Política de Privacidade, Proteção de Dados (LGPD/GDPR) e Diretrizes de Segurança Criptográfica do Nexus CRM.">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090e;
+      --card: #0f1420;
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #d9f942;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 5%; }
+    .container { max-width: 900px; margin: 0 auto; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 50px 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    h1, h2, h3 { font-family: 'Outfit', sans-serif; color: #fff; margin-bottom: 1rem; }
+    h1 { font-size: 2.4rem; color: var(--primary); }
+    h2 { font-size: 1.4rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    p, li { color: var(--muted); font-size: 0.98rem; margin-bottom: 1rem; }
+    ul { padding-left: 20px; margin-bottom: 1.5rem; }
+    .badge { display: inline-block; background: rgba(217, 249, 66, 0.15); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem; }
+    .back-btn { display: inline-flex; align-items: center; gap: 8px; color: var(--primary); text-decoration: none; font-weight: 600; margin-bottom: 2rem; font-size: 0.95rem; }
+    .back-btn:hover { text-decoration: underline; }
+    .sec-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 20px 0; }
+    .sec-card h4 { color: #fff; margin-bottom: 8px; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/landing" class="back-btn">&larr; Voltar para a Página Principal</a>
+    <span class="badge">CONFORMIDADE LGPD (LEI Nº 13.709/2018) & GDPR</span>
+    <h1>Política de Privacidade e Proteção de Dados</h1>
+    <p><strong>Última atualização:</strong> 26 de Setembro de 2026</p>
+
+    <h2>1. Compromisso com a Privacidade e Segurança</h2>
+    <p>O Nexus CRM Enterprise tem o compromisso inegociável de proteger os dados pessoais e corporativos tratados através de nossa plataforma. Esta Política estabelece com transparência como coletamos, processamos, armazenamos e salvaguardamos suas informações, em total conformidade com a <strong>Lei Geral de Proteção de Dados Pessoais (LGPD - Lei nº 13.709/2018)</strong> e o <strong>Regulamento Geral sobre a Proteção de Dados da União Europeia (GDPR - Regulamento UE 2016/679)</strong>.</p>
+
+    <h2>2. Papéis no Tratamento de Dados (Controlador vs. Operador)</h2>
+    <ul>
+      <li><strong>Nexus CRM como Operador:</strong> Em relação aos dados dos clientes, leads e contatos inseridos na plataforma pelo Contratante, o Nexus CRM atua exclusivamente como <em>Operador</em> de dados, processando-os estritamente sob as instruções e autorização da organização contratante.</li>
+      <li><strong>Nexus CRM como Controlador:</strong> Em relação aos dados cadastrais da empresa contratante (e-mail corporativo do administrador, CNPJ, dados de faturamento e logs de auditoria técnica), atuamos como <em>Controlador</em> para fins de execução contratual e cumprimento de dever legal.</li>
+    </ul>
+
+    <h2>3. Medidas Técnicas de Segurança Criptográfica (Zero Trust)</h2>
+    <p>Nossa infraestrutura foi concebida sob os preceitos de <em>Privacy by Design</em> e <em>Privacy by Default</em>, implementando salvaguardas que superam os padrões bancários e corporativos internacionais:</p>
+
+    <div class="sec-card">
+      <h4>🔒 Criptografia em Repouso (AES-256-GCM com AAD)</h4>
+      <p>Todos os campos confidenciais e dados sensíveis de contato são cifrados com o algoritmo AES-256-GCM. Cada registro utiliza dados autenticados adicionais (AAD) atrelados ao identificador exclusivo do locatário (Tenant ID), impedindo ataques de injeção de texto cifrado entre organizações.</p>
+    </div>
+
+    <div class="sec-card">
+      <h4>🛡️ Isolamento Lógico Multitenant (Row-Level Security)</h4>
+      <p>Políticas ativas no banco de dados garantem que nenhuma query possa acessar registros fora do tenant autenticado. Sessões cruzadas ou transbordamento de dados são matematicamente bloqueados no nível de persistência.</p>
+    </div>
+
+    <div class="sec-card">
+      <h4>🔑 Proteção de Credenciais com Scrypt</h4>
+      <p>Senhas de usuários e chaves de acesso são derivadas por funções de memória pesada (Scrypt), tornando inviável qualquer tentativa de ataque por força bruta ou dicionário acelerado por hardware especializado (GPU/ASIC).</p>
+    </div>
+
+    <div class="sec-card">
+      <h4>📜 Trilha de Auditoria Criptográfica com Hash Chaining</h4>
+      <p>Todos os eventos de criação, alteração, exportação de relatórios ou exclusão geram registros de auditoria assinados com SHA-256 e encadeados de forma imutável, impossibilitando adulterações retrospectivas de logs.</p>
+    </div>
+
+    <h2>4. Direitos dos Titulares de Dados (Art. 18 da LGPD)</h2>
+    <p>O titular dos dados pessoais tratados através da plataforma tem direito a requerer a qualquer momento:</p>
+    <ul>
+      <li>Confirmação da existência de tratamento e acesso rápido aos dados;</li>
+      <li>Correção de dados incompletos, inexatos ou desatualizados;</li>
+      <li>Anonimização, bloqueio ou eliminação de dados desnecessários ou tratados em desconformidade com a legislação;</li>
+      <li>Portabilidade de seus dados a outro fornecedor de serviço mediante exportação padronizada;</li>
+      <li>Revogação do consentimento concedido previamente.</li>
+    </ul>
+
+    <h2>5. Armazenamento Local e Arquitetura Offline-First</h2>
+    <p>O Nexus CRM utiliza tecnologias de PWA (IndexedDB criptografado e Cache Storage seguro) no dispositivo do usuário para permitir produtividade mesmo offline. Nenhum dado corporativo sincronizado localmente é compartilhado com terceiros ou redes externas não autenticadas.</p>
+
+    <h2>6. Contato do Encarregado de Dados (DPO)</h2>
+    <p>Para dúvidas, requisições de titulares de dados ou esclarecimentos sobre nossas práticas de cibersegurança e governança, entre em contato diretamente com o nosso Encarregado pelo Tratamento de Dados Pessoais (DPO):</p>
+    <p><strong>Encarregado (DPO):</strong> Equipe de Segurança e Governança Nexus CRM<br>
+    <strong>E-mail direto:</strong> <a href="mailto:dpo@nexuscrm.com.br" style="color: var(--primary);">dpo@nexuscrm.com.br</a><br>
+    <strong>Prazo de atendimento:</strong> Até 48 horas úteis para chamados de titulares de dados.</p>
+  </div>
+</body>
+</html>
