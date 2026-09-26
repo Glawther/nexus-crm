@@ -246,6 +246,42 @@ function applyRoleUIRestrictions(permissions) {
   const firebaseBtn = document.getElementById('sidebar-firebase-btn');
   const exportBtn = document.getElementById('btn-export-csv');
 
+  const isAdmin = !!permissions.isAdmin;
+
+  // 1. Restrição das abas exclusivas do Administrador: Equipe & Convites, Auditoria e Tríade CID
+  const navTeam = document.getElementById('nav-item-team') || document.querySelector('.nav-item[data-view="team"]')?.closest('li');
+  const navAudit = document.getElementById('nav-item-audit') || document.querySelector('.nav-item[data-view="audit"]')?.closest('li');
+  const navSecurity = document.getElementById('nav-item-security') || document.querySelector('.nav-item[data-view="security"]')?.closest('li');
+
+  if (navTeam) navTeam.style.display = isAdmin ? '' : 'none';
+  if (navAudit) navAudit.style.display = isAdmin ? '' : 'none';
+  if (navSecurity) navSecurity.style.display = isAdmin ? '' : 'none';
+
+  // Se o usuário não for admin e estiver em uma das abas protegidas, redireciona imediatamente para o funil
+  const adminOnlyViews = ['team', 'audit', 'security'];
+  const state = crmStore.getState();
+  if (!isAdmin && adminOnlyViews.includes(state.activeView)) {
+    if (window.navigateToView) {
+      window.navigateToView('pipeline');
+    }
+  }
+
+  // 2. Menu de Ferramentas da Barra Lateral (Governança exclusiva de Administrador)
+  const btnMenuExportAudit = document.getElementById('btn-menu-export-audit');
+  const btnMenuBilling = document.getElementById('btn-menu-billing');
+  const btnMenuWhitelabel = document.getElementById('btn-menu-whitelabel');
+  const btnMenuWebhook = document.getElementById('btn-menu-webhook');
+  const groupCompany = document.getElementById('tools-group-company');
+  const dividerCompany = document.getElementById('tools-divider-company');
+
+  if (btnMenuExportAudit) btnMenuExportAudit.style.display = isAdmin ? 'flex' : 'none';
+  if (btnMenuBilling) btnMenuBilling.style.display = isAdmin ? 'flex' : 'none';
+  if (btnMenuWhitelabel) btnMenuWhitelabel.style.display = isAdmin ? 'flex' : 'none';
+  if (btnMenuWebhook) btnMenuWebhook.style.display = isAdmin ? 'flex' : 'none';
+  if (groupCompany) groupCompany.style.display = isAdmin ? 'block' : 'none';
+  if (dividerCompany) dividerCompany.style.display = isAdmin ? 'block' : 'none';
+
+  // 3. Configurações de Nuvem & IA (Gemini / Firebase)
   if (permissions.canAccessCloudConfig) {
     if (geminiBtn) {
       geminiBtn.style.opacity = '1';
@@ -278,6 +314,17 @@ function applyRoleUIRestrictions(permissions) {
   }
 }
 
+// Global handler to switch between Admin and Employee roles for live RBAC demonstration
+window.handleToggleRole = function() {
+  const role = getCurrentRole();
+  const nextRole = role === USER_ROLES.ADMIN ? USER_ROLES.EMPLOYEE : USER_ROLES.ADMIN;
+  setUserRole(nextRole);
+  logAudit(AUDIT_ACTIONS.ROLE_SWITCHED, { fromRole: role, toRole: nextRole });
+  showToast(nextRole === USER_ROLES.ADMIN 
+    ? "🛡️ Modo Administrador Ativado (Visão 360°, Equipe, Auditoria e Governança)" 
+    : "💼 Modo Funcionário Ativado (Abas administrativas ocultas conforme Confidencialidade CID)", "info");
+};
+
 // ==========================================================================
 // Navigation & Views
 // ==========================================================================
@@ -285,27 +332,58 @@ function setupNavigation() {
   const navItems = document.querySelectorAll('.nav-item[data-view]');
   const viewSections = document.querySelectorAll('.view-section');
 
+  window.navigateToView = function(targetView) {
+    const adminOnlyViews = ['team', 'audit', 'security'];
+    const state = crmStore.getState();
+    const isAdmin = !!state.permissions?.isAdmin;
+
+    if (adminOnlyViews.includes(targetView) && !isAdmin) {
+      showToast('🔒 Acesso restrito: As abas Equipe, Auditoria e Tríade CID são exclusivas de Administradores.', 'warning');
+      targetView = 'pipeline';
+    }
+
+    navItems.forEach(n => n.classList.remove('active'));
+    const item = document.querySelector(`.nav-item[data-view="${targetView}"]`);
+    if (item) item.classList.add('active');
+
+    viewSections.forEach(section => {
+      section.classList.toggle('active', section.id === `view-${targetView}`);
+    });
+
+    // Update header title
+    const pageTitle = document.getElementById('current-page-title');
+    if (pageTitle && item) {
+      pageTitle.textContent = item.dataset.title || 'Pipeline de Vendas';
+    }
+
+    crmStore.setActiveView(targetView);
+  };
+
   navItems.forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       const targetView = item.dataset.view;
-
-      navItems.forEach(n => n.classList.remove('active'));
-      item.classList.add('active');
-
-      viewSections.forEach(section => {
-        section.classList.toggle('active', section.id === `view-${targetView}`);
-      });
-
-      // Update header title
-      const pageTitle = document.getElementById('current-page-title');
-      if (pageTitle) {
-        pageTitle.textContent = item.dataset.title || 'Pipeline de Vendas';
-      }
-
-      crmStore.setActiveView(targetView);
+      window.navigateToView(targetView);
     });
   });
+
+  // Deep linking and hash navigation protection
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '').split('?')[0];
+    if (hash && !hash.startsWith('checkout') && !hash.startsWith('register')) {
+      const validViews = ['pipeline', 'customers', 'tasks', 'metrics', 'team', 'audit', 'security'];
+      if (validViews.includes(hash)) {
+        window.navigateToView(hash);
+      }
+    }
+  });
+
+  // Initialize view from URL hash if present
+  const initialHash = window.location.hash.replace('#', '').split('?')[0];
+  const validInitialViews = ['pipeline', 'customers', 'tasks', 'metrics', 'team', 'audit', 'security'];
+  if (initialHash && validInitialViews.includes(initialHash)) {
+    window.navigateToView(initialHash);
+  }
 }
 
 function updateNavCounters(state) {
@@ -1521,17 +1599,6 @@ function setupBackupEvents() {
   }
 }
 
-// ==========================================================================
-// Role Switching Handler (Tríade CID / RBAC Simulation)
-// ==========================================================================
-window.handleToggleRole = function() {
-  const current = getCurrentRole();
-  const newRole = current === USER_ROLES.ADMIN ? USER_ROLES.EMPLOYEE : USER_ROLES.ADMIN;
-  setUserRole(newRole);
-  logAudit(AUDIT_ACTIONS.ROLE_SWITCHED, { fromRole: current, toRole: newRole });
-  const roleLabel = newRole === USER_ROLES.ADMIN ? 'Administrador (Acesso Total 🛡️)' : 'Funcionário / Consultor (Acesso Restrito 💼)';
-  showToast(`Perfil alternado para: ${roleLabel}`, "info");
-};
 
 // ==========================================================================
 // Proposal Modal Events (One-Click Proposal & PDF Print)
@@ -1989,7 +2056,9 @@ function setupCommandPalette() {
     const state = crmStore.getState();
     const customers = state.allCustomers || [];
 
-    const defaultActions = [
+    const isUserAdmin = !!state.permissions?.isAdmin;
+
+    const allActions = [
       {
         id: 'action-toggle-theme',
         icon: '🌓',
@@ -2040,6 +2109,7 @@ function setupCommandPalette() {
         icon: '🛡️',
         title: 'Exportar Relatório de Auditoria (Tríade CID)',
         hint: 'Logs imutáveis',
+        adminOnly: true,
         category: 'Ações Rápidas',
         run: () => {
           window.closeCommandPalette();
@@ -2081,7 +2151,7 @@ function setupCommandPalette() {
         category: 'Navegação',
         run: () => {
           window.closeCommandPalette();
-          window.location.hash = 'pipeline';
+          window.navigateToView ? window.navigateToView('pipeline') : (window.location.hash = 'pipeline');
         }
       },
       {
@@ -2092,7 +2162,7 @@ function setupCommandPalette() {
         category: 'Navegação',
         run: () => {
           window.closeCommandPalette();
-          window.location.hash = 'customers';
+          window.navigateToView ? window.navigateToView('customers') : (window.location.hash = 'customers');
         }
       },
       {
@@ -2103,7 +2173,7 @@ function setupCommandPalette() {
         category: 'Navegação',
         run: () => {
           window.closeCommandPalette();
-          window.location.hash = 'tasks';
+          window.navigateToView ? window.navigateToView('tasks') : (window.location.hash = 'tasks');
         }
       },
       {
@@ -2114,7 +2184,31 @@ function setupCommandPalette() {
         category: 'Navegação',
         run: () => {
           window.closeCommandPalette();
-          window.location.hash = 'metrics';
+          window.navigateToView ? window.navigateToView('metrics') : (window.location.hash = 'metrics');
+        }
+      },
+      {
+        id: 'nav-team',
+        icon: '👥',
+        title: 'Ir para Equipe & Convites',
+        hint: 'Gestão de Time',
+        adminOnly: true,
+        category: 'Navegação',
+        run: () => {
+          window.closeCommandPalette();
+          window.navigateToView ? window.navigateToView('team') : (window.location.hash = 'team');
+        }
+      },
+      {
+        id: 'nav-audit',
+        icon: '📜',
+        title: 'Ir para Trilha de Auditoria & Logs',
+        hint: 'ISO 27001',
+        adminOnly: true,
+        category: 'Navegação',
+        run: () => {
+          window.closeCommandPalette();
+          window.navigateToView ? window.navigateToView('audit') : (window.location.hash = 'audit');
         }
       },
       {
@@ -2122,13 +2216,16 @@ function setupCommandPalette() {
         icon: '🔒',
         title: 'Ir para Tríade CID & Governança',
         hint: 'Atalho: 5',
+        adminOnly: true,
         category: 'Navegação',
         run: () => {
           window.closeCommandPalette();
-          window.location.hash = 'security';
+          window.navigateToView ? window.navigateToView('security') : (window.location.hash = 'security');
         }
       }
     ];
+
+    const defaultActions = allActions.filter(a => !a.adminOnly || isUserAdmin);
 
     let html = '';
 
@@ -2285,15 +2382,19 @@ function setupKeyboardShortcuts() {
       const importDialog = document.getElementById('import-dialog');
       if (importDialog) importDialog.showModal();
     } else if (e.key === '1') {
-      window.location.hash = 'pipeline';
+      window.navigateToView ? window.navigateToView('pipeline') : (window.location.hash = 'pipeline');
     } else if (e.key === '2') {
-      window.location.hash = 'customers';
+      window.navigateToView ? window.navigateToView('customers') : (window.location.hash = 'customers');
     } else if (e.key === '3') {
-      window.location.hash = 'tasks';
+      window.navigateToView ? window.navigateToView('tasks') : (window.location.hash = 'tasks');
     } else if (e.key === '4') {
-      window.location.hash = 'metrics';
+      window.navigateToView ? window.navigateToView('metrics') : (window.location.hash = 'metrics');
     } else if (e.key === '5') {
-      window.location.hash = 'security';
+      if (crmStore.getState().permissions?.isAdmin) {
+        window.navigateToView ? window.navigateToView('security') : (window.location.hash = 'security');
+      } else {
+        showToast('🔒 Acesso restrito: Apenas administradores podem acessar a Tríade CID.', 'warning');
+      }
     }
   });
 }
